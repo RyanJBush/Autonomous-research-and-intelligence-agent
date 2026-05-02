@@ -12,7 +12,7 @@ os.environ["ASTRA_DATABASE_URL"] = "sqlite://"
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import Citation, Memory, ResearchSession, ResearchTraceEvent, Source, Summary, User
+from app.models import AuditLog, Citation, Memory, ResearchSession, ResearchTraceEvent, Source, Summary, User
 from app.services.research_service import ResearchService
 
 
@@ -351,6 +351,83 @@ def test_research_endpoints() -> None:
     audit_response = client.get("/api/audit-logs", headers=admin)
     assert audit_response.status_code == 200
     assert any(item["action"] == "research.create" for item in audit_response.json())
+
+
+
+def test_login_reuses_existing_workspace() -> None:
+    first = client.post(
+        "/api/auth/login",
+        json={"email": "shared-workspace@example.com", "password": "pw-one"},
+    )
+    second = client.post(
+        "/api/auth/login",
+        json={"email": "shared-workspace@another.com", "password": "pw-two"},
+    )
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    db = TestingSessionLocal()
+    try:
+        users = (
+            db.query(User)
+            .filter(User.email.in_(["shared-workspace@example.com", "shared-workspace@another.com"]))
+            .all()
+        )
+        assert len(users) == 2
+        assert users[0].workspace_id is not None
+        assert users[0].workspace_id == users[1].workspace_id
+    finally:
+        db.close()
+
+
+def test_create_research_skips_audit_when_user_has_no_workspace() -> None:
+    login = client.post(
+        "/api/auth/login",
+        json={"email": "no-workspace-audit@example.com", "password": "pass"},
+    )
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    db = TestingSessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "no-workspace-audit@example.com").first()
+        assert user is not None
+        user.workspace_id = None
+        db.add(user)
+        db.commit()
+    finally:
+        db.close()
+
+    create_response = client.post(
+        "/api/research",
+        json={"query": "no audit entry expected"},
+        headers=headers,
+    )
+    assert create_response.status_code == 200
+
+    db = TestingSessionLocal()
+    try:
+        user = db.query(User).filter(User.email == "no-workspace-audit@example.com").first()
+        assert user is not None
+        # no workspace means audit logging is skipped entirely
+        assert db.query(AuditLog).filter(AuditLog.user_id == user.id).count() == 0
+        assert db.query(Source).filter(Source.research_id == create_response.json()["research_id"]).count() == 1
+        assert db.query(ResearchTraceEvent).filter(ResearchTraceEvent.research_id == create_response.json()["research_id"]).count() >= 1
+    finally:
+        db.close()
+
+
+def test_export_markdown_sets_media_type() -> None:
+    headers = login_headers()
+    create_response = client.post(
+        "/api/research",
+        json={"query": "markdown export media type"},
+        headers=headers,
+    )
+    research_id = create_response.json()["research_id"]
+
+    response = client.get(f"/api/research/{research_id}/export?format=markdown", headers=headers)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/markdown")
 
 
 def test_unauthenticated_requests_return_401() -> None:
