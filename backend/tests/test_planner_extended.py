@@ -62,3 +62,20 @@ def test_generate_follow_up_queries_with_empty_claims_returns_base_queries() -> 
     follow_ups = PlannerAgent().generate_follow_up_queries("AI policy", [])
     assert "AI policy contradictory evidence" in follow_ups
     assert "AI policy primary sources" in follow_ups
+
+
+def test_build_plan_returns_structured_steps() -> None:
+    plan = PlannerAgent().build_plan("AI policy and safety", breadth=2)
+    assert plan["query"] == "AI policy and safety"
+    assert len(plan["steps"]) >= 1
+    first_step = plan["steps"][0]
+    assert first_step["step_id"] == 1
+    assert first_step["sub_question"]
+    assert "expected_sources" in first_step
+    assert "outputs" in first_step
+
+
+def test_build_plan_includes_regulatory_sources_for_policy_queries() -> None:
+    plan = PlannerAgent().build_plan("AI regulation", breadth=1)
+    expected_sources = plan["steps"][0]["expected_sources"]
+    assert "government or regulator publications" in expected_sources

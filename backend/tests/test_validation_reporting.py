@@ -186,3 +186,14 @@ def test_pii_redactor_masks_email_phone_and_ssn() -> None:
     assert "[REDACTED_PHONE]" in content
     assert "[REDACTED_SSN]" in content
     assert stats["total"] == 3
+
+
+def test_validator_domain_matching_avoids_suffix_spoofing() -> None:
+    validator = ValidationLayer()
+    sources = [
+        {"title": "good", "url": "https://example.com/a", "content": "z" * 150},
+        {"title": "spoof", "url": "https://badexample.com/a", "content": "z" * 150},
+    ]
+    filtered = validator.filter_sources(sources, allow_domains=["example.com"])
+    assert len(filtered) == 1
+    assert filtered[0]["url"] == "https://example.com/a"

@@ -52,9 +52,9 @@ class ValidationLayer:
             if self.has_prompt_injection_signal(content):
                 continue
             host = self._host(url)
-            if normalized_deny and any(host.endswith(domain) for domain in normalized_deny):
+            if normalized_deny and any(self._host_matches(host, domain) for domain in normalized_deny):
                 continue
-            if normalized_allow and not any(host.endswith(domain) for domain in normalized_allow):
+            if normalized_allow and not any(self._host_matches(host, domain) for domain in normalized_allow):
                 continue
             fingerprint = self._dedupe_fingerprint(source.get("title", ""), url, content)
             if fingerprint in seen_fingerprints:
@@ -169,6 +169,12 @@ class ValidationLayer:
 
     def _host(self, url: str) -> str:
         return (urlparse(url).hostname or "").lower()
+
+    def _host_matches(self, host: str, domain: str) -> bool:
+        normalized_domain = domain.strip().lstrip(".").lower()
+        if not normalized_domain:
+            return False
+        return host == normalized_domain or host.endswith(f".{normalized_domain}")
 
     def _dedupe_fingerprint(self, title: str, url: str, content: str) -> str:
         normalized_title = str(title).strip().lower()
