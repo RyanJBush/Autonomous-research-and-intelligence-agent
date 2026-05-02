@@ -351,3 +351,54 @@ def test_research_endpoints() -> None:
     audit_response = client.get("/api/audit-logs", headers=admin)
     assert audit_response.status_code == 200
     assert any(item["action"] == "research.create" for item in audit_response.json())
+
+
+def test_unauthenticated_requests_return_401() -> None:
+    assert client.get("/api/research").status_code == 401
+    assert client.post("/api/research", json={"query": "q"}).status_code == 401
+    assert client.get("/api/workspaces/current").status_code == 401
+    assert client.get("/api/audit-logs").status_code == 401
+
+
+def test_cannot_access_another_users_research_returns_404() -> None:
+    # Create research as user A
+    headers_a = login_headers()
+    create_resp = client.post(
+        "/api/research",
+        json={"query": "user A query"},
+        headers=headers_a,
+    )
+    assert create_resp.status_code == 200
+    research_id = create_resp.json()["research_id"]
+
+    # User B logs in with a different email
+    resp_b = client.post(
+        "/api/auth/login",
+        json={"email": "other-user@example.com", "password": "pass"},
+    )
+    headers_b = {"Authorization": f"Bearer {resp_b.json()['access_token']}"}
+
+    assert client.get(f"/api/research/{research_id}", headers=headers_b).status_code == 404
+    assert client.get(f"/api/sources/{research_id}", headers=headers_b).status_code == 404
+    assert client.get(f"/api/memory/{research_id}", headers=headers_b).status_code == 404
+    assert client.get(f"/api/research/{research_id}/trace", headers=headers_b).status_code == 404
+    assert (
+        client.get(f"/api/research/{research_id}/metrics", headers=headers_b).status_code == 404
+    )
+
+
+def test_pause_resume_retry_nonexistent_research_returns_404() -> None:
+    headers = login_headers()
+    assert client.post("/api/research/999999/pause", headers=headers).status_code == 404
+    assert client.post("/api/research/999999/resume", headers=headers).status_code == 404
+    assert client.post("/api/research/999999/retry", headers=headers).status_code == 404
+
+
+def test_audit_logs_returns_403_for_non_admin() -> None:
+    # Use a fresh email never touched by admin_headers() to guarantee researcher role
+    resp = client.post(
+        "/api/auth/login",
+        json={"email": "non-admin-audit@example.com", "password": "pass"},
+    )
+    headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+    assert client.get("/api/audit-logs", headers=headers).status_code == 403
