@@ -71,13 +71,23 @@ class ResearchService:
             planning_started = perf_counter()
             self.tool_registry.ensure_stage_allowed(role, "planning")
             self._start_stage(db, research, "planning", "Building research plan")
-            plan_steps = self._run_agent(
+            structured_plan = self._run_agent(
                 db,
                 research.id,
                 "planner",
-                lambda: self.planner.plan(query, breadth=breadth),
+                lambda: self.planner.build_plan(query, breadth=breadth),
             )
-            self._record_stage(db, research, "planning", planning_started, "Plan generated")
+            plan_steps = [step["sub_question"] for step in structured_plan["steps"]]
+            if not plan_steps:
+                plan_steps = [query]
+            plan_preview = json.dumps(structured_plan, ensure_ascii=False)[:1000]
+            self._record_stage(
+                db,
+                research,
+                "planning",
+                planning_started,
+                f"Plan generated: {plan_preview}",
+            )
 
             searching_started = perf_counter()
             self.tool_registry.ensure_stage_allowed(role, "searching")

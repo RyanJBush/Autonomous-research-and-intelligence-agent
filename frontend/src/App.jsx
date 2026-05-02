@@ -25,6 +25,16 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+function extractApiError(message) {
+  if (!message) return "Request failed"
+  try {
+    const parsed = JSON.parse(message)
+    if (typeof parsed === "string") return parsed
+    if (parsed?.detail) return String(parsed.detail)
+  } catch {}
+  return message
+}
+
 async function api(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -36,18 +46,18 @@ async function api(path, options = {}) {
   })
   if (!response.ok) {
     const message = await response.text()
-    throw new Error(message || 'Request failed')
+    throw new Error(extractApiError(message))
   }
   if (response.status === 204) return null
   return response.json()
 }
 
-function decomposeQuery(query) {
+function decomposeQuery(query, breadth = 3) {
   return query
     .split(/,|;|\band\b/gi)
     .map((part) => part.trim())
     .filter(Boolean)
-    .slice(0, 4)
+    .slice(0, Math.max(1, breadth + 1))
 }
 
 function confidenceBadge(level) {
@@ -204,7 +214,7 @@ function ResearchQueryPage() {
   const [allowDomains, setAllowDomains] = useState('')
   const [denyDomains, setDenyDomains] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const planPreview = useMemo(() => decomposeQuery(query), [query])
+  const planPreview = useMemo(() => decomposeQuery(query, breadth), [query, breadth])
 
   const submit = async (event) => {
     event.preventDefault()
@@ -534,7 +544,6 @@ function ResearchResultsPage() {
                       : 'border-slate-200'
                   }`}
                   onClick={() => setSelectedClaimId(finding.claim_id)}
-                  className="rounded-md border border-slate-200 p-3"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium">{finding.claim}</p>
@@ -547,15 +556,13 @@ function ResearchResultsPage() {
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
                     Confidence: {finding.confidence} • Support count:{' '}
-                    {finding.support_count}
+                    {finding.support?.length ?? 0}
                   </p>
                   {finding.confidence_rationale && (
                     <p className="mt-1 text-xs text-slate-500">
                       {finding.confidence_rationale}
                     </p>
                   )}
-                    Confidence: {finding.confidence}
-                  </p>
                 </article>
               ))}
             </div>
@@ -605,7 +612,6 @@ function ResearchResultsPage() {
               </div>
               <ul className="mt-3 space-y-2 text-sm">
                 {evidenceTable.map((source) => (
-                {(detail.report?.evidence_table || []).map((source) => (
                   <li
                     key={source.source_id}
                     className="rounded border border-slate-200 p-2"
@@ -775,7 +781,6 @@ function SourceViewerPage() {
           />
         )}
         {filtered.map((source) => (
-        {sources.map((source) => (
           <article
             key={source.id}
             className="rounded-md border border-slate-200 bg-white p-4"
