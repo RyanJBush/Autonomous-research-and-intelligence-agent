@@ -140,7 +140,9 @@ class ResearchService:
                         deny_domains=deny_domains,
                     ),
                 )
-                preview_report = self.report_builder.build(query, [], [], [])
+                preview_report = self.report_builder.build(
+                    query, [], [], [], research_plan=structured_plan
+                )
                 if validated_preview:
                     preview_report = self.report_builder.build(
                         query,
@@ -158,6 +160,7 @@ class ResearchService:
                         ],
                         [],
                         [],
+                        research_plan=structured_plan,
                     )
                 evidence_score = float(preview_report["evidence_coverage"]["score"])
                 if evidence_score >= 0.6:
@@ -234,6 +237,7 @@ class ResearchService:
             )
 
             source_rows: list[Source] = []
+            step_outputs: list[dict[str, object]] = []
             pii_redactions_total = 0
             for source_payload in validated_sources:
                 redacted_content, redaction_stats = self.pii_redactor.redact(
@@ -255,6 +259,15 @@ class ResearchService:
                     [content_chunk],
                     research.id,
                     str(source_payload["url"]),
+                )
+                step_outputs.append(
+                    {
+                        "stage": "extract",
+                        "source_url": str(source_payload["url"]),
+                        "source_title": str(source_payload["title"]),
+                        "credibility_score": float(source_payload["credibility_score"]),
+                        "output": content_chunk,
+                    }
                 )
                 db.add(
                     Memory(
@@ -308,6 +321,8 @@ class ResearchService:
                     source_rows,
                     citation_rows,
                     contradictions,
+                    research_plan=structured_plan,
+                    step_outputs=step_outputs,
                     compliance={"pii_redactions": pii_redactions_total},
                 ),
             )

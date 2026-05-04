@@ -12,6 +12,8 @@ class ReportBuilder:
         sources: list[Source],
         citations: list[Citation],
         contradictions: list[dict[str, str | int]],
+        research_plan: dict | None = None,
+        step_outputs: list[dict[str, object]] | None = None,
         compliance: dict[str, int] | None = None,
     ) -> dict:
         citation_by_source: dict[int, list[Citation]] = {}
@@ -62,6 +64,8 @@ class ReportBuilder:
         )
         return {
             "executive_summary": f"Automated research summary for: {query}",
+            "research_plan": research_plan or {"query": query, "steps": []},
+            "step_outputs": step_outputs or [],
             "findings": findings,
             "evidence_table": [
                 {
