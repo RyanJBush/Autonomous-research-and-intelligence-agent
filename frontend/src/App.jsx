@@ -380,6 +380,8 @@ function ResearchResultsPage() {
   const [sourceTypeFilter, setSourceTypeFilter] = useState('all')
   const [debugTrace, setDebugTrace] = useState(false)
   const [refineQuery, setRefineQuery] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false)
 
   useEffect(() => {
     api(`/api/research/${params.id}`)
@@ -460,6 +462,36 @@ function ResearchResultsPage() {
   }
 
   const rerun = async () => {
+    setActionError('')
+    setIsSubmittingAction(true)
+    try {
+      const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
+      window.location.href = `/results/${data.research_id}`
+    } catch (error) {
+      setActionError(error.message || 'Unable to re-run this session.')
+    } finally {
+      setIsSubmittingAction(false)
+    }
+  }
+
+  const refine = async () => {
+    setActionError('')
+    if (!refineQuery.trim()) {
+      setActionError('Refined query cannot be empty.')
+      return
+    }
+    setIsSubmittingAction(true)
+    try {
+      const data = await api(`/api/research/${params.id}/refine`, {
+        method: 'POST',
+        body: JSON.stringify({ query: refineQuery.trim() }),
+      })
+      window.location.href = `/results/${data.research_id}`
+    } catch (error) {
+      setActionError(error.message || 'Unable to run refined query.')
+    } finally {
+      setIsSubmittingAction(false)
+    }
     const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
     window.location.href = `/results/${data.research_id}`
   }
@@ -477,6 +509,14 @@ function ResearchResultsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Research Results</h1>
         <div className="flex gap-2">
+            <button
+              className="rounded-md border border-slate-300 px-3 py-1 text-sm"
+              onClick={rerun}
+              type="button"
+              disabled={isSubmittingAction}
+            >
+              Re-run
+            </button>
           <button
             className="rounded-md border border-slate-300 px-3 py-1 text-sm"
             onClick={rerun}
@@ -541,6 +581,9 @@ function ResearchResultsPage() {
             <button className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-white" type="button" onClick={refine}>
               Run refined query
             </button>
+            {actionError && (
+              <p className="mt-2 text-sm text-red-600">{actionError}</p>
+            )}
           </section>
 
           {metrics && (
@@ -694,9 +737,6 @@ function ResearchResultsPage() {
                         {item.severity || 'medium'}
                       </span>
                     </div>
-                    <p className="font-medium">
-                      {item.claim_a} vs {item.claim_b}
-                    </p>
                     <p className="text-xs text-slate-600">{item.reason}</p>
                   </li>
                 ))}
