@@ -21,6 +21,7 @@ Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
 - `POST /api/research/{id}/pause`
 - `POST /api/research/{id}/resume`
 - `POST /api/research/{id}/retry`
+- `POST /api/research/{id}/refine`
 - `GET /api/research/{id}/export?format=markdown|json`
 - `GET /api/research/{id}/replay`
 - `GET /api/workspaces/current`
@@ -38,6 +39,7 @@ Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
 - PII redaction before persistence and compliance reporting
 - Source credibility scoring + contradiction detection
 - Structured report synthesis with claim-to-source links
+- Structured research-plan + per-step output capture in report payload
 - Report export to Markdown / JSON with confidence + disclaimer sections
 - Summarization agent
 - Citation generation
@@ -52,6 +54,7 @@ Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
 - Dashboard
 - Research Query
 - Research Results
+  - Includes re-run, refine-and-rerun, plan viewer, and simple/debug execution trace modes
 - Source Viewer
 - Settings
 

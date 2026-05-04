@@ -378,6 +378,8 @@ function ResearchResultsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedClaimId, setSelectedClaimId] = useState('')
   const [sourceTypeFilter, setSourceTypeFilter] = useState('all')
+  const [debugTrace, setDebugTrace] = useState(false)
+  const [refineQuery, setRefineQuery] = useState('')
 
   useEffect(() => {
     api(`/api/research/${params.id}`)
@@ -409,6 +411,9 @@ function ResearchResultsPage() {
         setMetricsError('Metrics unavailable.')
       })
   }, [params.id])
+  useEffect(() => {
+    setRefineQuery(detail?.research?.query || '')
+  }, [detail?.research?.query])
 
   const findingMap = useMemo(() => {
     const entries = (detail?.report?.findings || []).map((finding) => [
@@ -454,11 +459,31 @@ function ResearchResultsPage() {
     window.URL.revokeObjectURL(url)
   }
 
+  const rerun = async () => {
+    const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
+    window.location.href = `/results/${data.research_id}`
+  }
+
+  const refine = async () => {
+    const data = await api(`/api/research/${params.id}/refine`, {
+      method: 'POST',
+      body: JSON.stringify({ query: refineQuery }),
+    })
+    window.location.href = `/results/${data.research_id}`
+  }
+
   return (
     <Layout>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Research Results</h1>
         <div className="flex gap-2">
+          <button
+            className="rounded-md border border-slate-300 px-3 py-1 text-sm"
+            onClick={rerun}
+            type="button"
+          >
+            Re-run
+          </button>
           <button
             className="rounded-md border border-slate-300 px-3 py-1 text-sm"
             onClick={() => exportReport('markdown')}
@@ -505,6 +530,17 @@ function ResearchResultsPage() {
               generated{' '}
               {formatTimestamp(detail.report?.provenance?.generated_at)}
             </p>
+          </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-semibold">Refine and rerun</h2>
+            <textarea
+              className="mt-2 min-h-24 w-full rounded-md border border-slate-300 p-2 text-sm"
+              value={refineQuery}
+              onChange={(event) => setRefineQuery(event.target.value)}
+            />
+            <button className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-white" type="button" onClick={refine}>
+              Run refined query
+            </button>
           </section>
 
           {metrics && (
@@ -669,7 +705,12 @@ function ResearchResultsPage() {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5">
-            <h2 className="text-lg font-semibold">Live execution timeline</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Execution trace</h2>
+              <button type="button" className="text-xs text-slate-600 underline" onClick={() => setDebugTrace((value) => !value)}>
+                {debugTrace ? 'Simple view' : 'Debug view'}
+              </button>
+            </div>
             <ul className="mt-3 space-y-2 text-sm">
               {trace.map((event, index) => (
                 <li
@@ -690,6 +731,11 @@ function ResearchResultsPage() {
                   <p className="text-xs text-slate-400">
                     {formatTimestamp(event.created_at)}
                   </p>
+                  {debugTrace && (
+                    <p className="mt-1 rounded bg-slate-100 p-2 font-mono text-[11px] text-slate-600">
+                      stage={event.stage} state={event.state} error={event.error_category || 'none'}
+                    </p>
+                  )}
                 </li>
               ))}
               {trace.length === 0 && (
@@ -703,6 +749,16 @@ function ResearchResultsPage() {
             )}
           </section>
 
+          <section className="rounded-lg border border-slate-200 bg-white p-5">
+            <h2 className="text-lg font-semibold">Research plan</h2>
+            <ul className="mt-2 list-inside list-disc text-sm text-slate-600">
+              {(detail.report?.research_plan?.steps || []).map((step) => (
+                <li key={step.step_id}>
+                  {step.sub_question} — expected: {(step.expected_sources || []).join(', ')}
+                </li>
+              ))}
+            </ul>
+          </section>
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-lg font-semibold">Source citations</h2>

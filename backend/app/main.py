@@ -28,6 +28,7 @@ from app.schemas import (
     ResearchCreate,
     ResearchDetail,
     ResearchMetricsRead,
+    ResearchRefineRequest,
     ResearchRead,
     ResearchReplayRead,
     ResearchResult,
@@ -160,6 +161,47 @@ def retry_research(
         "research_session",
         research.id,
         f"Retry from {research_id}",
+    )
+    report = json.loads(summary.structured_report) if summary.structured_report else {}
+    return ResearchResult(
+        research_id=research.id,
+        summary=summary.content,
+        citations=citations,
+        report=report,
+    )
+
+
+@app.post("/api/research/{research_id}/refine", response_model=ResearchResult)
+def refine_research(
+    research_id: int,
+    payload: ResearchRefineRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role("admin", "researcher")),
+) -> ResearchResult:
+    previous = _get_research_or_404(db, research_id, user.id)
+    _enforce_daily_quota(db, user.id)
+    research, summary, citations = app.state.research_service.run(
+        db,
+        user.id,
+        payload.query,
+        role=user.role,
+        workspace_id=user.workspace_id,
+        depth=payload.depth,
+        breadth=payload.breadth,
+        recency_days=payload.recency_days,
+        max_sources=payload.max_sources,
+        allow_domains=payload.allow_domains,
+        deny_domains=payload.deny_domains,
+        parent_session_id=previous.id,
+        version=previous.version + 1,
+    )
+    _log_audit(
+        db,
+        user,
+        "research.refine",
+        "research_session",
+        research.id,
+        f"Refine from {research_id}",
     )
     report = json.loads(summary.structured_report) if summary.structured_report else {}
     return ResearchResult(
