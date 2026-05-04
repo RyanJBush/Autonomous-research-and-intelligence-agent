@@ -34,6 +34,16 @@ class ResearchCreate(BaseModel):
     deny_domains: list[str] = Field(default_factory=list)
 
 
+class ResearchRefineRequest(BaseModel):
+    query: str
+    depth: int = 2
+    breadth: int = 3
+    recency_days: int | None = 30
+    max_sources: int = 5
+    allow_domains: list[str] = Field(default_factory=list)
+    deny_domains: list[str] = Field(default_factory=list)
+
+
 class ResearchRead(BaseModel):
     id: int
     query: str

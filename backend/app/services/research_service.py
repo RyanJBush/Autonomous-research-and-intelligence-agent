@@ -93,6 +93,7 @@ class ResearchService:
             self.tool_registry.ensure_stage_allowed(role, "searching")
             self._start_stage(db, research, "searching", "Running web discovery")
             discovered_urls: list[str] = []
+            search_failures = 0
             active_queries = list(plan_steps)
             for iteration in range(max(1, depth)):
                 iteration_queries = active_queries if iteration == 0 else active_queries[:breadth]
@@ -113,6 +114,7 @@ class ResearchService:
                                 )
                             )
                         except Exception:
+                            search_failures += 1
                             continue
                 discovered_urls.extend(discovered_urls_iteration)
                 if iteration == max(1, depth) - 1:
@@ -140,7 +142,9 @@ class ResearchService:
                         deny_domains=deny_domains,
                     ),
                 )
-                preview_report = self.report_builder.build(query, [], [], [])
+                preview_report = self.report_builder.build(
+                    query, [], [], [], research_plan=structured_plan
+                )
                 if validated_preview:
                     preview_report = self.report_builder.build(
                         query,
@@ -158,6 +162,7 @@ class ResearchService:
                         ],
                         [],
                         [],
+                        research_plan=structured_plan,
                     )
                 evidence_score = float(preview_report["evidence_coverage"]["score"])
                 if evidence_score >= 0.6:
@@ -179,6 +184,7 @@ class ResearchService:
             self.tool_registry.ensure_stage_allowed(role, "extracting")
             self._start_stage(db, research, "extracting", "Extracting source content")
             source_payloads: list[dict[str, str]] = []
+            extraction_failures = 0
             for url in deduped_urls:
                 try:
                     title, content = self._run_agent(
@@ -188,6 +194,7 @@ class ResearchService:
                         lambda source_url=url: self.scraper.extract(source_url),
                     )
                 except Exception:
+                    extraction_failures += 1
                     continue
                 source_payloads.append({"title": title, "url": url, "content": content})
             self._record_stage(
@@ -195,7 +202,10 @@ class ResearchService:
                 research,
                 "extracting",
                 extracting_started,
-                f"Extracted {len(source_payloads)} source payloads",
+                (
+                    f"Extracted {len(source_payloads)} source payloads "
+                    f"(search_failures={search_failures}, extraction_failures={extraction_failures})"
+                ),
             )
 
             validating_started = perf_counter()
@@ -234,6 +244,7 @@ class ResearchService:
             )
 
             source_rows: list[Source] = []
+            step_outputs: list[dict[str, object]] = []
             pii_redactions_total = 0
             for source_payload in validated_sources:
                 redacted_content, redaction_stats = self.pii_redactor.redact(
@@ -255,6 +266,15 @@ class ResearchService:
                     [content_chunk],
                     research.id,
                     str(source_payload["url"]),
+                )
+                step_outputs.append(
+                    {
+                        "stage": "extract",
+                        "source_url": str(source_payload["url"]),
+                        "source_title": str(source_payload["title"]),
+                        "credibility_score": float(source_payload["credibility_score"]),
+                        "output": content_chunk,
+                    }
                 )
                 db.add(
                     Memory(
@@ -308,6 +328,8 @@ class ResearchService:
                     source_rows,
                     citation_rows,
                     contradictions,
+                    research_plan=structured_plan,
+                    step_outputs=step_outputs,
                     compliance={"pii_redactions": pii_redactions_total},
                 ),
             )
