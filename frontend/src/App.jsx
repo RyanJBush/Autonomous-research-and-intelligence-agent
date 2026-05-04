@@ -492,6 +492,16 @@ function ResearchResultsPage() {
     } finally {
       setIsSubmittingAction(false)
     }
+    const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
+    window.location.href = `/results/${data.research_id}`
+  }
+
+  const refine = async () => {
+    const data = await api(`/api/research/${params.id}/refine`, {
+      method: 'POST',
+      body: JSON.stringify({ query: refineQuery }),
+    })
+    window.location.href = `/results/${data.research_id}`
   }
 
   return (
@@ -507,6 +517,13 @@ function ResearchResultsPage() {
             >
               Re-run
             </button>
+          <button
+            className="rounded-md border border-slate-300 px-3 py-1 text-sm"
+            onClick={rerun}
+            type="button"
+          >
+            Re-run
+          </button>
           <button
             className="rounded-md border border-slate-300 px-3 py-1 text-sm"
             onClick={() => exportReport('markdown')}
