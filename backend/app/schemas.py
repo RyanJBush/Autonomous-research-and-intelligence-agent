@@ -62,6 +62,9 @@ class SourceRead(BaseModel):
     content: str
     source_type: str
     credibility_score: float
+    source_author: str | None = None
+    published_at: datetime | None = None
+    retrieved_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
