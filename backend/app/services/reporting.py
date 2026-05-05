@@ -22,6 +22,7 @@ class ReportBuilder:
         step_outputs: list[dict[str, object]] | None = None,
         compliance: dict[str, int] | None = None,
     ) -> dict:
+        generated_at = datetime.now(timezone.utc).isoformat()
         citation_by_source: dict[int, list[Citation]] = {}
         for citation in citations:
             citation_by_source.setdefault(citation.source_id, []).append(citation)
@@ -77,7 +78,7 @@ class ReportBuilder:
             "schema_version": _SCHEMA_VERSION,
             "provenance": {
                 "pipeline_version": _PIPELINE_VERSION,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "generated_at": generated_at,
             },
             "executive_summary": f"Automated research summary for: {query}",
             "research_plan": research_plan or {"query": query, "steps": []},

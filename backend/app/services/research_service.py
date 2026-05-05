@@ -188,6 +188,7 @@ class ResearchService:
             extraction_failures = 0
             for url in deduped_urls:
                 try:
+                    retrieved_at = datetime.now(timezone.utc)
                     title, content = self._run_agent(
                         db,
                         research.id,
@@ -197,7 +198,9 @@ class ResearchService:
                 except Exception:
                     extraction_failures += 1
                     continue
-                source_payloads.append({"title": title, "url": url, "content": content})
+                source_payloads.append(
+                    {"title": title, "url": url, "content": content, "retrieved_at": retrieved_at}
+                )
             self._record_stage(
                 db,
                 research,
@@ -260,7 +263,7 @@ class ResearchService:
                     content=redacted_content,
                     source_type=str(source_payload["source_type"]),
                     credibility_score=float(source_payload["credibility_score"]),
-                    retrieved_at=datetime.now(timezone.utc),
+                    retrieved_at=source_payload.get("retrieved_at"),
                 )
                 db.add(row)
                 source_rows.append(row)
