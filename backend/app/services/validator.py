@@ -52,9 +52,11 @@ class ValidationLayer:
             if self.has_prompt_injection_signal(content):
                 continue
             host = self._host(url)
-            if normalized_deny and any(self._host_matches(host, domain) for domain in normalized_deny):
+            deny_match = any(self._host_matches(host, d) for d in normalized_deny)
+            if normalized_deny and deny_match:
                 continue
-            if normalized_allow and not any(self._host_matches(host, domain) for domain in normalized_allow):
+            allow_match = any(self._host_matches(host, d) for d in normalized_allow)
+            if normalized_allow and not allow_match:
                 continue
             fingerprint = self._dedupe_fingerprint(source.get("title", ""), url, content)
             if fingerprint in seen_fingerprints:
@@ -132,6 +134,7 @@ class ValidationLayer:
             {
                 "content": str(source.get("content", "")).lower(),
                 "title": str(source.get("title", "")),
+                "credibility_score": float(source.get("credibility_score", 0.5)),
             }
             for source in sources
         ]
@@ -152,6 +155,15 @@ class ValidationLayer:
                 if (has_positive_left and has_negative_right) or (
                     has_negative_left and has_positive_right
                 ):
+                    avg_cred = (
+                        left_source["credibility_score"] + right_source["credibility_score"]
+                    ) / 2
+                    if avg_cred >= 0.7:
+                        severity = "high"
+                    elif avg_cred >= 0.5:
+                        severity = "medium"
+                    else:
+                        severity = "low"
                     contradictions.append(
                         {
                             "left_index": left_idx,
@@ -159,6 +171,7 @@ class ValidationLayer:
                             "reason": "Opposing outcome language found across sources",
                             "left_claim": str(left_source.get("title", "")),
                             "right_claim": str(right_source.get("title", "")),
+                            "severity": severity,
                         }
                     )
         return contradictions

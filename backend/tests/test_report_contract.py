@@ -27,10 +27,13 @@ def test_structured_report_contract_includes_core_fields() -> None:
         contradictions=[],
     )
 
-    assert (
-        report["executive_summary"]
-        == "Automated research summary for: Assess governance controls"
-    )
+    # Executive summary should now be synthesized from findings (not a static string)
+    assert "Assess governance controls" in report["executive_summary"]
+    assert len(report["executive_summary"]) > len("Assess governance controls")
+    # Overall confidence score added in Phase 5
+    assert "overall_confidence_score" in report
+    assert isinstance(report["overall_confidence_score"], float)
+    assert 0.0 <= report["overall_confidence_score"] <= 1.0
     assert "findings" in report
     assert "evidence_table" in report
     assert "source_comparison" in report

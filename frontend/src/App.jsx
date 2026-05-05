@@ -26,12 +26,14 @@ function authHeaders() {
 }
 
 function extractApiError(message) {
-  if (!message) return "Request failed"
+  if (!message) return 'Request failed'
   try {
     const parsed = JSON.parse(message)
-    if (typeof parsed === "string") return parsed
+    if (typeof parsed === 'string') return parsed
     if (parsed?.detail) return String(parsed.detail)
-  } catch {}
+  } catch {
+    /* ignore JSON parse errors and return the raw message */
+  }
   return message
 }
 
@@ -226,7 +228,10 @@ function ResearchQueryPage() {
   const [allowDomains, setAllowDomains] = useState('')
   const [denyDomains, setDenyDomains] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
-  const planPreview = useMemo(() => decomposeQuery(query, breadth), [query, breadth])
+  const planPreview = useMemo(
+    () => decomposeQuery(query, breadth),
+    [query, breadth]
+  )
 
   const submit = async (event) => {
     event.preventDefault()
@@ -400,6 +405,7 @@ function ResearchResultsPage() {
       .then((payload) => {
         setDetail(payload)
         setDetailError('')
+        setRefineQuery(payload?.research?.query || '')
       })
       .catch(() => {
         setDetail(null)
@@ -425,9 +431,6 @@ function ResearchResultsPage() {
         setMetricsError('Metrics unavailable.')
       })
   }, [params.id])
-  useEffect(() => {
-    setRefineQuery(detail?.research?.query || '')
-  }, [detail?.research?.query])
 
   const findingMap = useMemo(() => {
     const entries = (detail?.report?.findings || []).map((finding) => [
@@ -477,7 +480,9 @@ function ResearchResultsPage() {
     setActionError('')
     setIsSubmittingAction(true)
     try {
-      const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
+      const data = await api(`/api/research/${params.id}/retry`, {
+        method: 'POST',
+      })
       window.location.href = `/results/${data.research_id}`
     } catch (error) {
       setActionError(error.message || 'Unable to re-run this session.')
@@ -549,7 +554,14 @@ function ResearchResultsPage() {
       {detail && (
         <div className="mt-4 space-y-4">
           <section className="rounded-lg border border-slate-200 bg-white p-5">
-            <p className="font-medium">{detail.research.query}</p>
+            <div className="flex items-start justify-between gap-4">
+              <p className="font-medium">{detail.research.query}</p>
+              {detail.report?.overall_confidence_score != null && (
+                <ConfidenceBadge
+                  score={detail.report.overall_confidence_score}
+                />
+              )}
+            </div>
             {detail.requires_review && (
               <p className="mt-2 rounded-md bg-amber-100 p-2 text-sm text-amber-800">
                 Review required:{' '}
@@ -573,7 +585,11 @@ function ResearchResultsPage() {
               value={refineQuery}
               onChange={(event) => setRefineQuery(event.target.value)}
             />
-            <button className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-white" type="button" onClick={refine}>
+            <button
+              className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-white"
+              type="button"
+              onClick={refine}
+            >
               Run refined query
             </button>
             {actionError && (
@@ -728,7 +744,15 @@ function ResearchResultsPage() {
                       <p className="font-medium">
                         {item.claim_a} vs {item.claim_b}
                       </p>
-                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-700">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs ${
+                          item.severity === 'high'
+                            ? 'bg-rose-200 text-rose-900'
+                            : item.severity === 'low'
+                              ? 'bg-slate-100 text-slate-600'
+                              : 'bg-rose-100 text-rose-700'
+                        }`}
+                      >
                         {item.severity || 'medium'}
                       </span>
                     </div>
@@ -742,7 +766,11 @@ function ResearchResultsPage() {
           <section className="rounded-lg border border-slate-200 bg-white p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Execution trace</h2>
-              <button type="button" className="text-xs text-slate-600 underline" onClick={() => setDebugTrace((value) => !value)}>
+              <button
+                type="button"
+                className="text-xs text-slate-600 underline"
+                onClick={() => setDebugTrace((value) => !value)}
+              >
                 {debugTrace ? 'Simple view' : 'Debug view'}
               </button>
             </div>
@@ -768,7 +796,8 @@ function ResearchResultsPage() {
                   </p>
                   {debugTrace && (
                     <p className="mt-1 rounded bg-slate-100 p-2 font-mono text-[11px] text-slate-600">
-                      stage={event.stage} state={event.state} error={event.error_category || 'none'}
+                      stage={event.stage} state={event.state} error=
+                      {event.error_category || 'none'}
                     </p>
                   )}
                 </li>
@@ -789,7 +818,8 @@ function ResearchResultsPage() {
             <ul className="mt-2 list-inside list-disc text-sm text-slate-600">
               {(detail.report?.research_plan?.steps || []).map((step) => (
                 <li key={step.step_id}>
-                  {step.sub_question} — expected: {(step.expected_sources || []).join(', ')}
+                  {step.sub_question} — expected:{' '}
+                  {(step.expected_sources || []).join(', ')}
                 </li>
               ))}
             </ul>
@@ -830,6 +860,24 @@ function MetricCard({ label, value }) {
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-lg font-semibold">{value}</p>
     </article>
+  )
+}
+
+function ConfidenceBadge({ score }) {
+  const pct = Math.round(score * 100)
+  const colorClass =
+    score >= 0.85
+      ? 'bg-emerald-100 text-emerald-800'
+      : score >= 0.65
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-rose-100 text-rose-800'
+  return (
+    <span
+      className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${colorClass}`}
+      title="Overall confidence score across all findings"
+    >
+      Confidence: {pct}%
+    </span>
   )
 }
 

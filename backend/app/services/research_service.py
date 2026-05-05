@@ -208,7 +208,8 @@ class ResearchService:
                 extracting_started,
                 (
                     f"Extracted {len(source_payloads)} source payloads "
-                    f"(search_failures={search_failures}, extraction_failures={extraction_failures})"
+                    f"(search_failures={search_failures}, "
+                    f"extraction_failures={extraction_failures})"
                 ),
             )
 
