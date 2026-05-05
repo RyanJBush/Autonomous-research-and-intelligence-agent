@@ -186,13 +186,25 @@ function DashboardPage() {
           >
             <div className="flex items-center justify-between">
               <p className="font-medium">{item.query}</p>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  item.status === 'complete'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : item.status === 'failed'
+                      ? 'bg-rose-100 text-rose-700'
+                      : 'bg-slate-100 text-slate-600'
+                }`}
+              >
                 {item.status}
               </span>
             </div>
-            <p className="mt-1 text-sm text-slate-500">
-              Version: {item.version}
-            </p>
+            <div className="mt-1 flex gap-3 text-xs text-slate-500">
+              <span>v{item.version}</span>
+              {item.parent_session_id && (
+                <span>refined from #{item.parent_session_id}</span>
+              )}
+              <span>{formatTimestamp(item.created_at)}</span>
+            </div>
           </Link>
         ))}
         {items.length === 0 && (
@@ -492,16 +504,6 @@ function ResearchResultsPage() {
     } finally {
       setIsSubmittingAction(false)
     }
-    const data = await api(`/api/research/${params.id}/retry`, { method: 'POST' })
-    window.location.href = `/results/${data.research_id}`
-  }
-
-  const refine = async () => {
-    const data = await api(`/api/research/${params.id}/refine`, {
-      method: 'POST',
-      body: JSON.stringify({ query: refineQuery }),
-    })
-    window.location.href = `/results/${data.research_id}`
   }
 
   return (
@@ -509,18 +511,11 @@ function ResearchResultsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Research Results</h1>
         <div className="flex gap-2">
-            <button
-              className="rounded-md border border-slate-300 px-3 py-1 text-sm"
-              onClick={rerun}
-              type="button"
-              disabled={isSubmittingAction}
-            >
-              Re-run
-            </button>
           <button
             className="rounded-md border border-slate-300 px-3 py-1 text-sm"
             onClick={rerun}
             type="button"
+            disabled={isSubmittingAction}
           >
             Re-run
           </button>

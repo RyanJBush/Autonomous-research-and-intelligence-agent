@@ -50,6 +50,7 @@ class ResearchRead(BaseModel):
     status: str
     version: int
     is_paused: bool
+    parent_session_id: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -62,6 +63,9 @@ class SourceRead(BaseModel):
     content: str
     source_type: str
     credibility_score: float
+    source_author: str | None = None
+    published_at: datetime | None = None
+    retrieved_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
