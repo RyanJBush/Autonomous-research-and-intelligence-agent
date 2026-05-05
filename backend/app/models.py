@@ -66,6 +66,10 @@ class Source(Base):
     content: Mapped[str] = mapped_column(Text)
     source_type: Mapped[str] = mapped_column(String(64), default="news")
     credibility_score: Mapped[float] = mapped_column(Float, default=0.0)
+    # Optional metadata populated when available
+    source_author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     research_session: Mapped[ResearchSession] = relationship(back_populates="sources")
 

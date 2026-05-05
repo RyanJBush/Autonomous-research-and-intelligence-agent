@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from time import perf_counter
 
 from sqlalchemy.orm import Session
@@ -259,6 +260,7 @@ class ResearchService:
                     content=redacted_content,
                     source_type=str(source_payload["source_type"]),
                     credibility_score=float(source_payload["credibility_score"]),
+                    retrieved_at=datetime.now(timezone.utc),
                 )
                 db.add(row)
                 source_rows.append(row)

@@ -1,5 +1,11 @@
+from datetime import datetime, timezone
+
 from app.models import Citation, Source
 from app.services.validator import ValidationLayer
+
+# Report schema version – bump when the report structure changes
+_SCHEMA_VERSION = "1.0"
+_PIPELINE_VERSION = "1.0.0"
 
 
 class ReportBuilder:
@@ -31,12 +37,17 @@ class ReportBuilder:
                 }
                 for citation in citation_by_source.get(source.id, [])
             ]
+            confidence = round(float(source.credibility_score), 3)
+            confidence_level = self._confidence_level(confidence)
             findings.append(
                 {
                     "claim_id": f"F-{idx}",
                     "claim": source.title,
-                    "confidence": round(float(source.credibility_score), 3),
-                    "confidence_level": self._confidence_level(float(source.credibility_score)),
+                    "confidence": confidence,
+                    "confidence_level": confidence_level,
+                    "confidence_rationale": self._confidence_rationale(
+                        confidence_level, source.source_type, len(support)
+                    ),
                     "support": support,
                     "source_links": [item["url"] for item in support],
                 }
@@ -63,6 +74,11 @@ class ReportBuilder:
             disclaimer or any(finding["confidence_level"] == "low" for finding in findings)
         )
         return {
+            "schema_version": _SCHEMA_VERSION,
+            "provenance": {
+                "pipeline_version": _PIPELINE_VERSION,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+            },
             "executive_summary": f"Automated research summary for: {query}",
             "research_plan": research_plan or {"query": query, "steps": []},
             "step_outputs": step_outputs or [],
@@ -180,6 +196,32 @@ class ReportBuilder:
         if confidence >= 0.65:
             return "medium"
         return "low"
+
+    def _confidence_rationale(
+        self, level: str, source_type: str, support_count: int
+    ) -> str:
+        """Generate a human-readable rationale for the confidence level."""
+        type_label = {
+            "official_docs": "official documentation",
+            "academic": "peer-reviewed / academic source",
+            "news": "news outlet",
+            "blog": "blog or opinion piece",
+            "forum": "community forum",
+        }.get(source_type, source_type)
+        base = f"Source is {type_label}."
+        if support_count == 0:
+            base += " No direct citation excerpts captured."
+        elif support_count == 1:
+            base += " Supported by 1 citation excerpt."
+        else:
+            base += f" Supported by {support_count} citation excerpts."
+        if level == "high":
+            base += " Confidence is high."
+        elif level == "medium":
+            base += " Confidence is moderate; additional verification recommended."
+        else:
+            base += " Confidence is low; treat findings as provisional."
+        return base
 
     def _source_comparison(self, sources: list[Source]) -> list[dict[str, object]]:
         by_type: dict[str, list[float]] = {}
