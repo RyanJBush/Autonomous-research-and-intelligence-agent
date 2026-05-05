@@ -31,18 +31,22 @@ Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
 
 ### Research pipeline
 - Planner agent
-- Sub-question decomposition + multi-query generation
+  - Domain-aware sub-question decomposition (policy, academic, technology, market, health)
+  - Multi-query generation per step with recency filtering
 - Search tool
+  - DuckDuckGo Instant Answer API (primary) + Wikipedia OpenSearch (fallback)
+  - Returns up to 5 deduplicated URLs per query
 - Scraping/extraction with `requests` + `BeautifulSoup`
 - Validation layer with domain allow/deny filtering + duplicate source detection
 - Prompt-injection signal filtering for scraped sources
 - PII redaction before persistence and compliance reporting
-- Source credibility scoring + contradiction detection
+- Source credibility scoring + contradiction detection with severity levels (high/medium/low)
 - Structured report synthesis with claim-to-source links
-- Structured research-plan + per-step output capture in report payload
-- Report export to Markdown / JSON with confidence + disclaimer sections
+  - Synthesized executive summary from findings + overall confidence score
+  - Structured research-plan + per-step output capture in report payload
+  - Report export to Markdown / JSON with confidence + disclaimer sections
 - Summarization agent
-- Citation generation
+- Evidence-based citation extraction (meaningful sentence excerpts)
 - Research stage tracing + metrics
 - Replay/debug timeline endpoint with error categories
 - Agent-specific execution metrics and attempt tracking
@@ -53,8 +57,13 @@ Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
 - Login
 - Dashboard
 - Research Query
+  - Domain-aware plan preview
+  - Advanced controls (recency, domain allow/deny)
 - Research Results
+  - Overall confidence score badge
+  - Color-coded contradiction severity badges
   - Includes re-run, refine-and-rerun, plan viewer, and simple/debug execution trace modes
+  - Export to Markdown/JSON
 - Source Viewer
 - Settings
 

@@ -1,8 +1,6 @@
 import re
 from typing import TypedDict
 
-from langchain_core.prompts import ChatPromptTemplate
-
 
 class ResearchPlanStep(TypedDict):
     step_id: int
@@ -17,14 +15,41 @@ class ResearchPlan(TypedDict):
     steps: list[ResearchPlanStep]
 
 
+# Domain keywords used to enrich sub-question generation
+_DOMAIN_HINTS: list[tuple[tuple[str, ...], str, list[str]]] = [
+    (
+        ("policy", "law", "regulation", "compliance", "governance", "legal"),
+        "policy",
+        ["government or regulator publications", "legislative records", "official guidance"],
+    ),
+    (
+        ("research", "study", "paper", "clinical", "trial", "evidence", "systematic review"),
+        "academic",
+        ["peer-reviewed papers", "systematic reviews", "meta-analyses"],
+    ),
+    (
+        ("technology", "software", "ai", "ml", "model", "algorithm", "cloud", "api"),
+        "technology",
+        ["technical documentation", "benchmark reports", "vendor whitepapers"],
+    ),
+    (
+        ("market", "industry", "revenue", "growth", "forecast", "adoption", "trends"),
+        "market",
+        ["industry analyst reports", "market research firms", "financial filings"],
+    ),
+    (
+        ("health", "medical", "drug", "treatment", "patient", "clinical", "fda"),
+        "health",
+        ["FDA guidance", "clinical trial registries", "medical journals"],
+    ),
+]
+
+
 class PlannerAgent:
     def __init__(self) -> None:
-        self.prompt = ChatPromptTemplate.from_template(
-            "Break the query into research sub-questions: {query}"
-        )
+        pass
 
     def build_plan(self, query: str, breadth: int = 3) -> ResearchPlan:
-        _ = self.prompt.invoke({"query": query})
         normalized_query = re.sub(r"\s+", " ", query).strip()
         if not normalized_query:
             return {"query": "", "steps": []}
@@ -44,14 +69,15 @@ class PlannerAgent:
             deduped_questions.append(question)
 
         selected_questions = deduped_questions[: max(1, breadth + 1)]
+        domain = self._detect_domain(normalized_query)
         steps: list[ResearchPlanStep] = []
         for index, sub_question in enumerate(selected_questions, start=1):
             steps.append(
                 {
                     "step_id": index,
                     "sub_question": sub_question,
-                    "objective": f"Find verifiable evidence for: {sub_question}",
-                    "expected_sources": self._expected_sources_for(sub_question),
+                    "objective": self._build_objective(sub_question, domain),
+                    "expected_sources": self._expected_sources_for(sub_question, domain),
                     "outputs": [
                         "short evidence memo",
                         "top claims to validate",
@@ -65,14 +91,36 @@ class PlannerAgent:
         research_plan = self.build_plan(query, breadth=breadth)
         return [step["sub_question"] for step in research_plan["steps"]]
 
-    def _expected_sources_for(self, sub_question: str) -> list[str]:
-        lowered = sub_question.lower()
-        sources = ["official documentation", "primary reporting", "expert analysis"]
-        if any(token in lowered for token in ("policy", "law", "regulation")):
-            sources.insert(0, "government or regulator publications")
-        if any(token in lowered for token in ("research", "study", "paper")):
-            sources.insert(0, "peer-reviewed papers")
-        return list(dict.fromkeys(sources))
+    def _detect_domain(self, query: str) -> str:
+        lowered = query.lower()
+        for keywords, domain, _ in _DOMAIN_HINTS:
+            if any(kw in lowered for kw in keywords):
+                return domain
+        return "general"
+
+    def _build_objective(self, sub_question: str, domain: str) -> str:
+        domain_prefix = {
+            "policy": "Identify authoritative regulatory or legal evidence for",
+            "academic": "Locate peer-reviewed or scientific evidence supporting",
+            "technology": "Gather technical documentation and benchmark data for",
+            "market": "Collect industry and market data to evaluate",
+            "health": "Find clinical or regulatory evidence regarding",
+        }.get(domain, "Find verifiable evidence for")
+        return f"{domain_prefix}: {sub_question}"
+
+    def _expected_sources_for(self, sub_question: str, domain: str = "general") -> list[str]:
+        # Start with domain-specific sources
+        sources: list[str] = []
+        for _keywords, d, domain_sources in _DOMAIN_HINTS:
+            if d == domain:
+                sources.extend(domain_sources)
+                break
+        # Always include general high-credibility sources
+        defaults = ["official documentation", "primary reporting", "expert analysis"]
+        for src in defaults:
+            if src not in sources:
+                sources.append(src)
+        return sources[:4]
 
     def generate_search_queries(self, step: str, recency_days: int | None = None) -> list[str]:
         variations = [

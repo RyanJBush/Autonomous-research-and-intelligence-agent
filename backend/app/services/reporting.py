@@ -61,6 +61,7 @@ class ReportBuilder:
                 "claim_b": item["right_claim"],
                 "reason": item["reason"],
                 "source_indices": [item["left_index"], item["right_index"]],
+                "severity": item.get("severity", "medium"),
             }
             for item in contradictions
         ]
@@ -74,13 +75,18 @@ class ReportBuilder:
         review_required = bool(
             disclaimer or any(finding["confidence_level"] == "low" for finding in findings)
         )
+        overall_confidence_score = self._overall_confidence(findings)
+        executive_summary = self._build_executive_summary(
+            query, findings, contradiction_items, overall_confidence_score
+        )
         return {
             "schema_version": _SCHEMA_VERSION,
             "provenance": {
                 "pipeline_version": _PIPELINE_VERSION,
                 "generated_at": generated_at,
             },
-            "executive_summary": f"Automated research summary for: {query}",
+            "executive_summary": executive_summary,
+            "overall_confidence_score": overall_confidence_score,
             "research_plan": research_plan or {"query": query, "steps": []},
             "step_outputs": step_outputs or [],
             "findings": findings,
@@ -106,6 +112,11 @@ class ReportBuilder:
 
     def to_summary_text(self, report: dict) -> str:
         lines = [report["executive_summary"], ""]
+        overall = report.get("overall_confidence_score")
+        if overall is not None:
+            pct = int(round(overall * 100))
+            lines.append(f"Overall confidence: {pct}%")
+            lines.append("")
         lines.append("Findings:")
         for finding in report["findings"]:
             claim = finding["claim"]
@@ -129,6 +140,10 @@ class ReportBuilder:
 
     def to_markdown(self, report: dict) -> str:
         lines = ["# Research Report", "", "## Executive Summary", report["executive_summary"], ""]
+        overall = report.get("overall_confidence_score")
+        if overall is not None:
+            pct = int(round(overall * 100))
+            lines.extend([f"**Overall confidence score:** {pct}%", ""])
         lines.append("## Findings")
         for finding in report["findings"]:
             links = ", ".join(finding["source_links"]) or "No source links"
@@ -268,3 +283,43 @@ class ReportBuilder:
                 "Limited evidence coverage; more sources are required before relying on findings."
             )
         return None
+
+    def _overall_confidence(self, findings: list[dict]) -> float:
+        """Compute the mean credibility score across all findings."""
+        if not findings:
+            return 0.0
+        return round(sum(float(f["confidence"]) for f in findings) / len(findings), 3)
+
+    def _build_executive_summary(
+        self,
+        query: str,
+        findings: list[dict],
+        contradictions: list[dict],
+        overall_confidence: float,
+    ) -> str:
+        """Synthesize a human-readable executive summary from findings."""
+        if not findings:
+            return f"Research on '{query}' found no usable sources."
+
+        source_count = len(findings)
+        pct = int(round(overall_confidence * 100))
+        lines = [
+            f"Research on '{query}' reviewed {source_count} source(s) "
+            f"with an overall confidence of {pct}%."
+        ]
+
+        # Highlight the top finding by confidence
+        sorted_findings = sorted(findings, key=lambda f: float(f["confidence"]), reverse=True)
+        top = sorted_findings[0]
+        level = top.get("confidence_level", "medium")
+        lines.append(
+            f"Highest-confidence finding ({level}): {top['claim']}"
+        )
+
+        if contradictions:
+            lines.append(
+                f"Note: {len(contradictions)} contradictory source(s) detected; "
+                "conclusions should be treated as provisional."
+            )
+
+        return " ".join(lines)

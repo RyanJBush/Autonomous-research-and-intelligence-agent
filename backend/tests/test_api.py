@@ -12,7 +12,16 @@ os.environ["ASTRA_DATABASE_URL"] = "sqlite://"
 
 from app.database import Base, get_db
 from app.main import app
-from app.models import AuditLog, Citation, Memory, ResearchSession, ResearchTraceEvent, Source, Summary, User
+from app.models import (
+    AuditLog,
+    Citation,
+    Memory,
+    ResearchSession,
+    ResearchTraceEvent,
+    Source,
+    Summary,
+    User,
+)
 from app.services.research_service import ResearchService
 
 
@@ -368,9 +377,13 @@ def test_login_reuses_existing_workspace() -> None:
 
     db = TestingSessionLocal()
     try:
+        shared_emails = [
+            "shared-workspace@example.com",
+            "shared-workspace@another.com",
+        ]
         users = (
             db.query(User)
-            .filter(User.email.in_(["shared-workspace@example.com", "shared-workspace@another.com"]))
+            .filter(User.email.in_(shared_emails))
             .all()
         )
         assert len(users) == 2
@@ -410,8 +423,13 @@ def test_create_research_skips_audit_when_user_has_no_workspace() -> None:
         assert user is not None
         # no workspace means audit logging is skipped entirely
         assert db.query(AuditLog).filter(AuditLog.user_id == user.id).count() == 0
-        assert db.query(Source).filter(Source.research_id == create_response.json()["research_id"]).count() == 1
-        assert db.query(ResearchTraceEvent).filter(ResearchTraceEvent.research_id == create_response.json()["research_id"]).count() >= 1
+        rid = create_response.json()["research_id"]
+        assert db.query(Source).filter(Source.research_id == rid).count() == 1
+        assert (
+            db.query(ResearchTraceEvent)
+            .filter(ResearchTraceEvent.research_id == rid)
+            .count()
+        ) >= 1
     finally:
         db.close()
 

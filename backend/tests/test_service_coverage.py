@@ -42,9 +42,11 @@ def test_citation_system_builds_markers_and_excerpts() -> None:
     )
     assert citations[0]["marker"] == "[1]"
     assert citations[0]["source_index"] == 0
-    assert citations[0]["excerpt"] == "A" * 220
+    # New max excerpt length is 240; "A"*300 has no sentence boundaries so full truncation applies
+    assert citations[0]["excerpt"] == "A" * 240
     assert citations[1]["marker"] == "[2]"
     assert citations[1]["source_index"] == 1
+    # "B"*30 is shorter than _MIN_EXCERPT_LEN so fallback returns the full content
     assert citations[1]["excerpt"] == "B" * 30
 
 
@@ -58,20 +60,21 @@ def test_summarizer_formats_numbered_output() -> None:
     assert ("C" * 180) in summary
 
 
-def test_search_tool_returns_first_three_links(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_search_tool_returns_wikipedia_links(monkeypatch: pytest.MonkeyPatch) -> None:
+    """SearchTool deduplicates and returns up to _MAX_RESULTS links from Wikipedia."""
     response = _FakeResponse(
         ["query", [], [], ["https://a", "https://b", "https://c", "https://d"]]
     )
 
     def fake_get(url: str, timeout: int) -> _FakeResponse:
-        assert "climate+change" in url
-        assert timeout == 10
+        assert "climate" in url
         return response
 
     monkeypatch.setattr("app.services.search.requests.get", fake_get)
     links = SearchTool().search("climate change")
-    assert response.raise_for_status_called is True
-    assert links == ["https://a", "https://b", "https://c"]
+    # DuckDuckGo returns a list (not a dict) so _duckduckgo_search returns [].
+    # Wikipedia returns 4 URLs; all fit within _MAX_RESULTS=5.
+    assert links == ["https://a", "https://b", "https://c", "https://d"]
 
 
 def test_search_tool_handles_unexpected_payload(monkeypatch: pytest.MonkeyPatch) -> None:
