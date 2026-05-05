@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
 
@@ -28,8 +29,8 @@ from app.schemas import (
     ResearchCreate,
     ResearchDetail,
     ResearchMetricsRead,
-    ResearchRefineRequest,
     ResearchRead,
+    ResearchRefineRequest,
     ResearchReplayRead,
     ResearchResult,
     ResearchTraceRead,
@@ -44,10 +45,20 @@ from app.security import (
     require_role,
     verify_password,
 )
+from app.services.demo_seeder import DemoSeeder
 from app.services.research_service import ResearchService
 
 app = FastAPI(title="Astra AI Backend")
 app.state.research_service = ResearchService()
+
+# Allow browser-based frontends to call the API from any origin (restrict in production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -412,6 +423,47 @@ def export_research_report(
     if format == "json":
         return JSONResponse(report)
     raise HTTPException(status_code=400, detail="Unsupported export format")
+
+
+@app.get("/api/plan-preview")
+def get_plan_preview(
+    query: str,
+    breadth: int = 3,
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Return the structured research plan for a query without running the full pipeline."""
+    if not query.strip():
+        return {"query": "", "steps": []}
+    return app.state.research_service.planner.build_plan(query.strip(), breadth=breadth)
+
+
+@app.post("/api/demo/seed", response_model=ResearchResult)
+def seed_demo_research(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role("admin", "researcher")),
+) -> ResearchResult:
+    """Create a pre-built demo research session without requiring network access."""
+    seeder = DemoSeeder()
+    research = seeder.seed(db, user_id=user.id, workspace_id=user.workspace_id)
+    _log_audit(
+        db,
+        user,
+        "research.demo_seed",
+        "research_session",
+        research.id,
+        "Demo seed created",
+    )
+    summary = db.query(Summary).filter(Summary.research_id == research.id).first()
+    citations = db.query(Citation).filter(Citation.research_id == research.id).all()
+    if summary is None:
+        raise HTTPException(status_code=500, detail="Demo seed failed to create summary")
+    report = json.loads(summary.structured_report) if summary.structured_report else {}
+    return ResearchResult(
+        research_id=research.id,
+        summary=summary.content,
+        citations=citations,
+        report=report,
+    )
 
 
 def _validate_research_owner(db: Session, research_id: int, user_id: int) -> None:

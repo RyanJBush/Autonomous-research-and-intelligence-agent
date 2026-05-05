@@ -479,3 +479,57 @@ def test_audit_logs_returns_403_for_non_admin() -> None:
     )
     headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
     assert client.get("/api/audit-logs", headers=headers).status_code == 403
+
+
+def test_plan_preview_returns_structured_plan() -> None:
+    headers = login_headers()
+    response = client.get(
+        "/api/plan-preview",
+        params={"query": "AI safety research", "breadth": 2},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "query" in data
+    assert "steps" in data
+    assert isinstance(data["steps"], list)
+    assert len(data["steps"]) >= 1
+    assert "sub_question" in data["steps"][0]
+    assert "expected_sources" in data["steps"][0]
+
+
+def test_plan_preview_empty_query_returns_empty_steps() -> None:
+    headers = login_headers()
+    response = client.get(
+        "/api/plan-preview",
+        params={"query": "   "},
+        headers=headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["steps"] == []
+
+
+def test_plan_preview_requires_auth() -> None:
+    response = client.get("/api/plan-preview", params={"query": "test"})
+    assert response.status_code == 401
+
+
+def test_demo_seed_creates_research_result() -> None:
+    headers = login_headers()
+    response = client.post("/api/demo/seed", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert "research_id" in data
+    assert "summary" in data
+    assert "report" in data
+    assert "findings" in data["report"]
+    assert len(data["report"]["findings"]) > 0
+    assert "confidence_score" in data["report"]
+    assert data["report"]["confidence_score"] > 0.0
+
+
+def test_demo_seed_requires_auth() -> None:
+    response = client.post("/api/demo/seed")
+    assert response.status_code == 401
+

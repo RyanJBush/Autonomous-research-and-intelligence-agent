@@ -152,6 +152,16 @@ class ValidationLayer:
                 if (has_positive_left and has_negative_right) or (
                     has_negative_left and has_positive_right
                 ):
+                    # Severity: high when both sources carry strong conflicting language,
+                    # medium otherwise.
+                    strong_keywords = ("critical", "significant", "major", "proven", "definitive")
+                    left_is_strong = any(
+                        kw in left_source["content"] for kw in strong_keywords
+                    )
+                    right_is_strong = any(
+                        kw in right_source["content"] for kw in strong_keywords
+                    )
+                    severity = "high" if (left_is_strong or right_is_strong) else "medium"
                     contradictions.append(
                         {
                             "left_index": left_idx,
@@ -159,6 +169,7 @@ class ValidationLayer:
                             "reason": "Opposing outcome language found across sources",
                             "left_claim": str(left_source.get("title", "")),
                             "right_claim": str(right_source.get("title", "")),
+                            "severity": severity,
                         }
                     )
         return contradictions

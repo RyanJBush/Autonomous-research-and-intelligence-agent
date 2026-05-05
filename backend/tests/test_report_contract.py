@@ -44,3 +44,8 @@ def test_structured_report_contract_includes_core_fields() -> None:
     assert finding["support"][0]["marker"] == "[1]"
     assert finding["source_links"] == ["https://example.com/policy"]
     assert report["evidence_coverage"]["score"] == 1.0
+    # Confidence fields added in phase-improvement pass
+    assert "confidence_score" in report
+    assert "confidence_level" in report
+    assert report["confidence_score"] == 0.82
+    assert report["confidence_level"] == "medium"

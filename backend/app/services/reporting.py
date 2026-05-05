@@ -74,6 +74,10 @@ class ReportBuilder:
         review_required = bool(
             disclaimer or any(finding["confidence_level"] == "low" for finding in findings)
         )
+        # Aggregate confidence: average of all per-finding scores
+        overall_confidence = (
+            round(sum(f["confidence"] for f in findings) / len(findings), 3) if findings else 0.0
+        )
         return {
             "schema_version": _SCHEMA_VERSION,
             "provenance": {
@@ -102,6 +106,8 @@ class ReportBuilder:
             "review_required": review_required,
             "compliance": compliance or {"pii_redactions": 0},
             "conclusion": conclusion,
+            "confidence_score": overall_confidence,
+            "confidence_level": self._confidence_level(overall_confidence),
         }
 
     def to_summary_text(self, report: dict) -> str:
@@ -129,6 +135,11 @@ class ReportBuilder:
 
     def to_markdown(self, report: dict) -> str:
         lines = ["# Research Report", "", "## Executive Summary", report["executive_summary"], ""]
+        # Overall confidence
+        conf_score = report.get("confidence_score", 0.0)
+        conf_level = report.get("confidence_level", "low")
+        lines.append(f"**Overall confidence:** {conf_score} ({conf_level})")
+        lines.append("")
         lines.append("## Findings")
         for finding in report["findings"]:
             links = ", ".join(finding["source_links"]) or "No source links"
