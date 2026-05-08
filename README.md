@@ -1,130 +1,127 @@
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![FAISS](https://img.shields.io/badge/FAISS-Memory-orange?style=flat)
+![CI](https://github.com/RyanJBush/Autonomous-research-and-intelligence-agent/actions/workflows/ci.yml/badge.svg)
+
 # Astra AI
 
-Autonomous AI research agent monorepo with a FastAPI backend and React frontend.
+> An autonomous AI research agent that decomposes complex queries into sub-questions, searches and validates sources in parallel, detects contradictions, and synthesizes citation-backed reports — built to explore what it actually takes to make LLM-powered research trustworthy.
 
-## Repository structure
-- `/backend` - FastAPI API, research pipeline, models, auth, and tests
-- `/frontend` - React + Vite + Tailwind UI
-- `/docs` - architecture notes, runbook, and demo script
+---
 
-## MVP capabilities
-### Backend API
-- `GET /health`
-- `POST /api/auth/login`
-- `POST /api/research`
-- `GET /api/research`
-- `GET /api/research/{id}`
-- `GET /api/research/{id}/trace`
-- `GET /api/research/{id}/metrics`
-- `GET /api/research/{id}/agent-metrics`
-- `GET /api/research/{id}/compliance`
-- `POST /api/research/{id}/pause`
-- `POST /api/research/{id}/resume`
-- `POST /api/research/{id}/retry`
-- `POST /api/research/{id}/refine`
-- `GET /api/research/{id}/export?format=markdown|json`
-- `GET /api/research/{id}/replay`
-- `GET /api/workspaces/current`
-- `GET /api/audit-logs` (admin)
-- `GET /api/sources/{research_id}`
-- `GET /api/memory/{research_id}`
+## 🎯 What I Built & Why
 
-### Research pipeline
-- Planner agent
-  - Domain-aware sub-question decomposition (policy, academic, technology, market, health)
-  - Multi-query generation per step with recency filtering
-- Search tool
-  - DuckDuckGo Instant Answer API (primary) + Wikipedia OpenSearch (fallback)
-  - Returns up to 5 deduplicated URLs per query
-- Scraping/extraction with `requests` + `BeautifulSoup`
-- Validation layer with domain allow/deny filtering + duplicate source detection
-- Prompt-injection signal filtering for scraped sources
-- PII redaction before persistence and compliance reporting
-- Source credibility scoring + contradiction detection with severity levels (high/medium/low)
-- Structured report synthesis with claim-to-source links
-  - Synthesized executive summary from findings + overall confidence score
-  - Structured research-plan + per-step output capture in report payload
-  - Report export to Markdown / JSON with confidence + disclaimer sections
-- Summarization agent
-- Evidence-based citation extraction (meaningful sentence excerpts)
-- Research stage tracing + metrics
-- Replay/debug timeline endpoint with error categories
-- Agent-specific execution metrics and attempt tracking
-- Workspace-scoped audit logging + daily research quota enforcement
-- FAISS memory persistence
+LLMs are good at generating text but bad at knowing when they're wrong. I built Astra AI to tackle the reliability problem in AI research pipelines:
 
-### Frontend pages
-- Login
-- Dashboard
-- Research Query
-  - Domain-aware plan preview
-  - Advanced controls (recency, domain allow/deny)
-- Research Results
-  - Overall confidence score badge
-  - Color-coded contradiction severity badges
-  - Includes re-run, refine-and-rerun, plan viewer, and simple/debug execution trace modes
-  - Export to Markdown/JSON
-- Source Viewer
-- Settings
+- **Multi-step planner agent** — domain-aware query decomposition (policy, academic, technology, market, health) ensures the right sub-questions are asked, not just the obvious ones
+- **Source validation layer** — domain allow/deny filtering, duplicate detection, prompt-injection signal filtering, and PII redaction before any content is persisted or cited
+- **Contradiction detection** — when two sources disagree, the pipeline surfaces the conflict with severity levels (high/medium/low) instead of silently picking one
+- **FAISS memory persistence** — research sessions retain context across steps so the agent builds on prior findings rather than starting from scratch each query
+- **Confidence-scored reports** — every synthesized report includes an overall confidence score and per-claim source links, making the output auditable
 
-## Run locally
-### Backend
+---
+
+## 📷 Features
+
+- **Autonomous research pipeline** — plan → search → scrape → validate → synthesize → report in one request
+- **Domain-aware planning** — query decomposition tuned for policy, academic, technology, market, and health domains
+- **Source credibility scoring** — per-source quality assessment with contradiction detection
+- **PII redaction** — before persistence and in compliance reporting
+- **FAISS memory** — vector-based session memory with persistence
+- **Pause / resume / retry / refine** — full run lifecycle controls
+- **Export to Markdown / JSON** — shareable reports with confidence sections and disclaimers
+- **React dashboard** — domain-aware plan preview, execution timeline, evidence filters, contradiction panel
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend API | FastAPI + SQLAlchemy + PostgreSQL |
+| Search | DuckDuckGo Instant Answer API + Wikipedia OpenSearch fallback |
+| Scraping | requests + BeautifulSoup |
+| Memory | FAISS (vector persistence) |
+| Frontend | React + Vite + Tailwind CSS |
+| Infra | Docker Compose + GitHub Actions CI |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Docker + Docker Compose
+- Python 3.11+
+- Node.js 20+
+
+### Docker (Recommended)
 ```bash
-cd backend
-cp .env.example .env
-PYENV_VERSION=3.11.14 python -m pip install -e .[dev]
-PYENV_VERSION=3.11.14 python -m uvicorn app.main:app --reload
+docker-compose up --build
+# Frontend:         http://localhost:5173
+# Backend API docs: http://localhost:8000/docs
+```
+
+### Local Development
+```bash
+# Backend
+cd backend && cp .env.example .env
+pip install -e .[dev]
+uvicorn app.main:app --reload
+
+# Frontend
+cd frontend && cp .env.example .env
+npm install && npm run dev
 ```
 
 > Prefer Python 3.11+ for local development (CI runs on 3.11).
 
-### Backend (without pyenv)
-```bash
-cd backend
-cp .env.example .env
-pip install -e .[dev]
-uvicorn app.main:app --reload
-```
-
-### Frontend
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-### Full stack
-```bash
-docker-compose up --build
-```
-
-Once running:
-- Frontend: http://localhost:5173
-- Backend docs: http://localhost:8000/docs
-
-## 15-minute demo flow
-1. Open `http://localhost:5173`.
-2. Sign in with any email/password (local demo auth auto-provisions a user).
-3. Open **Research Query** and run one of the built-in demo prompts.
-4. In **Research Results**, review:
-   - Findings with confidence rationale
-   - Evidence table filters and contradiction panel
-   - Execution timeline (state + latency)
-5. Open **Source Viewer** from citations and inspect source metadata.
-6. Export Markdown and JSON reports for portfolio walkthrough material.
-
-For a scriptable walkthrough, see `docs/demo-script.md`.
-For troubleshooting and operational checks, see `docs/runbook.md`.
-
-## Quality checks
+### Quality Checks
 ```bash
 make lint
 make test
 make smoke
 ```
 
-## CI and delivery readiness
-- GitHub Actions CI runs backend lint/tests and frontend lint/format/build.
-- Docker Compose now includes health checks for postgres/backend and ordered startup.
-- Report contract regression test guards structured-report trust fields.
+---
+
+## 🗂️ Repository Structure
+
+```
+backend/    FastAPI API, research pipeline, planner agent, validation layer, FAISS memory, tests
+frontend/   React dashboard (query input, plan preview, results, source viewer, execution trace)
+docs/       Architecture notes, demo script, runbook
+```
+
+---
+
+## 📘 15-Minute Demo Flow
+
+1. Open `http://localhost:5173` and sign in (local demo auth auto-provisions a user)
+2. Open **Research Query** and run one of the built-in demo prompts
+3. In **Research Results**, review:
+   - Findings with confidence rationale
+   - Evidence table filters and contradiction panel
+   - Execution timeline (state + latency per step)
+4. Open **Source Viewer** from citations and inspect source credibility metadata
+5. Export Markdown and JSON reports
+
+Full scripted walkthrough: `docs/demo-script.md`
+Troubleshooting: `docs/runbook.md`
+
+---
+
+## 📝 Key Learnings
+
+- Multi-step planning with domain awareness produces meaningfully better research decomposition than single-shot queries
+- Source validation (dedup, domain filtering, prompt-injection detection) is as important as source retrieval — garbage in, garbage out applies doubly when the output is a cited report
+- Contradiction detection is what separates a research tool from a hallucination machine; surfacing disagreements explicitly builds user trust in the output
+
+---
+
+## 📄 License
+
+MIT
