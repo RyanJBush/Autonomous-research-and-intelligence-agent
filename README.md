@@ -6,7 +6,11 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 ![CI](https://github.com/RyanJBush/Autonomous-research-and-intelligence-agent/actions/workflows/ci.yml/badge.svg)
 
-# Nexus Agent
+# Europa
+
+**Autonomous Research & Intelligence Agent**
+
+[**🔗 View Live Preview →**](https://www.perplexity.ai/computer/a/europa-preview-project-4-of-9-lCA5DWRgQoa4AN6VYPXAUQ)
 
 > An autonomous multi-step research agent that decomposes a natural language query into sub-tasks, executes parallel web research, synthesizes findings with source credibility scoring, and delivers structured intelligence reports.
 
@@ -14,7 +18,7 @@
 
 ## 🎯 What I Built & Why
 
-Large language models are powerful, but a single-turn query is often insufficient for complex research tasks. I built Nexus Agent to practice agentic system design — how you decompose tasks, manage tool calls, validate sources, and synthesize outputs across multiple steps:
+Large language models are powerful, but a single-turn query is often insufficient for complex research tasks. I built Europa to practice agentic system design — how you decompose tasks, manage tool calls, validate sources, and synthesize outputs across multiple steps:
 
 - **Query decomposition** — a planning step breaks the user’s question into targeted sub-queries, improving retrieval precision vs. a single broad search
 - **Parallel async execution** — sub-tasks run concurrently, cutting total research latency significantly on multi-step queries
