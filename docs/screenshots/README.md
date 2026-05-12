@@ -1,32 +1,52 @@
 # Screenshots
 
-This directory holds UI screenshots used by the project README and recruiter walkthrough. Files are intentionally committed as **placeholders** until a maintainer captures them from a running local stack.
+This directory holds UI screenshots used by the project README and recruiter walkthrough.
 
 > The text-only demo (`python scripts/demo_pipeline.py`) does not require screenshots — it prints the agent's I/O directly to the terminal. Screenshots are for the full UI walkthrough only.
 
 ---
 
-## Expected files
+## Files in this directory
 
-| File | What it should show | Capture from |
+| File | What it shows | Captured from |
 |---|---|---|
-| `01-query-input.png` | Research Query page: prompt textarea, breadth / depth / recency controls, allow/deny domain inputs, submit button | `http://localhost:5173` → "New Research" |
-| `02-task-decomposition.png` | Sub-question plan rendered before retrieval begins — one row per planned sub-question with objective | Research Results page, top of the page, during/after planning |
-| `03-source-cards.png` | Retrieved sources rendered as cards with credibility score, domain, recency, and excerpt | Research Results page, "Sources" section |
-| `04-final-cited-report.png` | Final report: findings, confidence rationale breakdown, contradiction flags, evidence table | Research Results page, "Report" section |
-| `05-api-docs.png` | Auto-generated FastAPI Swagger UI | `http://localhost:8000/docs` |
+| `01-query-input.png` | Research Query page: prompt textarea, breadth / depth / max-sources controls, recency-days input, allow/deny domain inputs, plan preview, submit button | `http://localhost:5173/research` |
+| `02-task-decomposition.png` | Research plan section — per-step sub-question and expected source types — rendered alongside source citations | Research Results page, "Research plan" panel |
+| `03-source-cards.png` | Evidence table panel — one card per retrieved source with title, type, and credibility score — next to the contradictions panel | Research Results page, "Evidence table" panel |
+| `04-final-cited-report.png` | Executive summary with confidence badge, findings list with per-claim confidence and support markers, refine-and-rerun control, sources/coverage/support-ratio metric cards | Research Results page, top of page |
+| `05-api-docs.png` | Auto-generated FastAPI Swagger UI listing all `/api/*` endpoints | `http://localhost:8000/docs` |
+| `06-execution-timeline.png` | Per-stage execution trace (`planning`, `searching`, `extracting`, `validating`, `synthesizing`, `complete`) with status and per-event latency | Research Results page, "Execution trace" panel |
 
-A 6th optional capture: `06-execution-timeline.png` — the per-stage timeline (`planning`, `searching`, `extracting`, `validating`, `synthesizing`) with latency markers.
+> Captured automatically via Playwright against the included sample dataset (`data/sample/sample_sources.json`) so the figures shown are reproducible. See `scripts/_capture_screenshots.py` for the capture flow and `backend/_europa_run.py` for the local-only runner that swaps the live retrieval tools for the sample data (Wikipedia/DuckDuckGo are unreliable without an API key/UA, and the goal here is an honest representation of the UI, not a live retrieval demo).
 
 ---
 
-## How to capture
+## How to re-capture
 
-1. Bring the stack up: `docker compose up --build` (see `docs/demo-runbook.md`).
+Two paths.
+
+**Automated (recommended):**
+
+```bash
+# Terminal 1 — patched backend (sample-data tools, CORS open for local vite)
+python backend/_europa_run.py
+
+# Terminal 2 — frontend
+cd frontend && npm ci && npm run dev -- --port 5773
+
+# Terminal 3 — capture
+python scripts/_capture_screenshots.py
+```
+
+The capture script logs in as `demo@europa.dev / demo123` (auto-created on first login by the patched backend), runs the suggested prompt, waits for the pipeline to complete, and writes all six PNGs into this directory.
+
+**Manual:**
+
+1. Bring the full stack up: `docker compose up --build` (see `docs/demo-runbook.md`).
 2. Run the suggested prompt: *"Compare major cloud providers on 2026 enterprise AI governance offerings."*
 3. Wait for the full pipeline to finish (the synthesizing stage will mark completion).
 4. Take the screenshots above. Recommended resolution: 1440×900 or larger; PNG; light theme for legibility.
-5. Save them in this directory with the exact filenames listed above so the README references resolve.
+5. Save them in this directory with the filenames listed above so the README references resolve.
 
 ---
 
@@ -39,8 +59,7 @@ A 6th optional capture: `06-execution-timeline.png` — the per-stage timeline (
 
 ---
 
-## Why these are placeholders
+## Honesty notes
 
-The repository is feature-complete for its stated scope, but screenshots are a maintenance burden — they age every time the UI changes. They are captured fresh before any portfolio submission rather than checked in long-term.
-
-If you are reviewing this repo and the screenshots are missing or stale, the text-only demo (`scripts/demo_pipeline.py`) plus the architecture doc are sufficient to evaluate the work.
+- Screenshots age every time the UI changes — they are committed for portfolio review but are expected to drift. If you find them stale, the text-only demo (`scripts/demo_pipeline.py`) plus the architecture doc are sufficient to evaluate the work.
+- The captures use the **mock** sample sources in `data/sample/sample_sources.json` (domains end in `.test`). Live retrieval against Wikipedia/DuckDuckGo without an API key/UA yields empty results, so we patch in deterministic sample data rather than ship screenshots of a broken-looking empty state. The pipeline itself (planner → search → scraper → validator → summarizer → citations → reporting) runs unchanged.
