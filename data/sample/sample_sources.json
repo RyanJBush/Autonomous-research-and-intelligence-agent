@@ -1,0 +1,55 @@
+{
+  "query": "Compare major cloud providers on enterprise AI governance offerings",
+  "retrieved_at": "2026-05-11T00:00:00Z",
+  "note": "Mock sources for local demo and tests. Not real retrieval results.",
+  "sources": [
+    {
+      "id": 1,
+      "url": "https://example-cloud-a.test/ai-governance",
+      "title": "Cloud Provider A: AI Governance Framework Overview",
+      "domain": "example-cloud-a.test",
+      "source_type": "vendor_docs",
+      "published_at": "2026-03-12T00:00:00Z",
+      "retrieved_at": "2026-05-11T00:00:00Z",
+      "author": "Cloud Provider A Documentation Team",
+      "credibility_score": 0.72,
+      "content": "Cloud Provider A offers a model registry, lineage tracking, automated bias evaluations, and policy-based access controls for enterprise AI workloads. Customers can attach governance policies to model deployments and receive audit logs."
+    },
+    {
+      "id": 2,
+      "url": "https://example-cloud-b.test/responsible-ai",
+      "title": "Responsible AI Toolkit — Cloud Provider B",
+      "domain": "example-cloud-b.test",
+      "source_type": "vendor_docs",
+      "published_at": "2026-02-04T00:00:00Z",
+      "retrieved_at": "2026-05-11T00:00:00Z",
+      "author": "Cloud Provider B AI Team",
+      "credibility_score": 0.70,
+      "content": "Cloud Provider B's Responsible AI toolkit includes fairness dashboards, explainability reports, and a content safety service. Customers configure governance at the workspace level rather than per-model."
+    },
+    {
+      "id": 3,
+      "url": "https://example-analyst.test/cloud-ai-governance-2026",
+      "title": "Analyst Brief: Cloud AI Governance Comparison 2026",
+      "domain": "example-analyst.test",
+      "source_type": "analyst_report",
+      "published_at": "2026-04-22T00:00:00Z",
+      "retrieved_at": "2026-05-11T00:00:00Z",
+      "author": "Sample Analyst Firm",
+      "credibility_score": 0.81,
+      "content": "Major cloud providers converged on three governance pillars in 2026: model lineage, automated evaluation, and policy enforcement. Differentiators are increasingly in the depth of audit logging and integration with enterprise IAM."
+    },
+    {
+      "id": 4,
+      "url": "https://example-regulator.test/ai-act-guidance",
+      "title": "Regulator Guidance: Enterprise AI Governance Expectations",
+      "domain": "example-regulator.test",
+      "source_type": "government",
+      "published_at": "2026-01-30T00:00:00Z",
+      "retrieved_at": "2026-05-11T00:00:00Z",
+      "author": "Sample Regulator",
+      "credibility_score": 0.88,
+      "content": "Enterprises deploying AI systems must maintain documentation of training data provenance, evaluation results, and incident response procedures. Cloud-hosted systems are not exempt; the burden of evidence remains with the deployer."
+    }
+  ]
+}

@@ -16,6 +16,32 @@
 
 ---
 
+## 👋 For Recruiters
+
+This is a **student portfolio project**, not a product. It is a runnable, tested demonstration of how I think about agent design, NLP, retrieval, and full-stack engineering. The fastest way to evaluate it:
+
+1. Read **[docs/architecture.md](docs/architecture.md)** for the pipeline and trust model
+2. Skim **[backend/app/services/](backend/app/services/)** — planner, validator, reporting, credibility scoring
+3. Look at **[docs/resume-bullets.md](docs/resume-bullets.md)** for ATS-friendly bullets pulled from this work
+4. Run the no-network demo: `python scripts/demo_pipeline.py`
+
+CI runs ruff + 120+ pytest cases on every push. See **Limitations & Future Work** below for what is *not* claimed.
+
+---
+
+## ❓ Problem Statement
+
+Research-style questions ("compare X across Y", "what's the current state of Z") need multiple sources, traceable citations, and an honest signal about confidence — not a single LLM monologue. This project explores how to:
+
+- decompose a question into targeted sub-questions,
+- retrieve and score sources by credibility,
+- synthesize findings that link back to specific source excerpts,
+- and flag contradictions and unsupported claims rather than hiding them.
+
+The goal is not to replace a human researcher; it is to produce a **first-pass evidence pack** a human can verify quickly.
+
+---
+
 ## 🎯 What I Built & Why
 
 Large language models are powerful, but a single-turn query is often insufficient for complex research tasks. I built Europa to practice agentic system design — how you decompose tasks, manage tool calls, validate sources, and synthesize outputs across multiple steps:
@@ -122,7 +148,10 @@ make lint && make test
 ```
 backend/    FastAPI API, agent pipeline, query decomposition, credibility scoring, tests
 frontend/   React research interface
-docs/       Architecture, agent design, demo walkthrough
+data/       Sample sources and a sample report (mock data, for the demo)
+docs/       Architecture, API reference, demo walkthrough, resume bullets
+scripts/    Standalone demo entry points (no DB / no network)
+.github/    CI workflows, issue / PR templates
 ```
 
 ---
@@ -132,6 +161,54 @@ docs/       Architecture, agent design, demo walkthrough
 - Query decomposition meaningfully improves retrieval quality — targeted sub-queries outperform a single broad search on complex topics
 - Source credibility scoring is the practical alternative to retrieval hallucination: rank by authority, not just relevance
 - Async parallel execution is essential for agentic systems; sequential tool calls at human-readable latency make the agent feel broken
+
+---
+
+## 🧪 Sample Data & Demo
+
+A self-contained demo runs the planner + summarizer + citation system against mock sources, with no database or network:
+
+```bash
+python scripts/demo_pipeline.py
+```
+
+Inputs and an illustrative output report live under `data/sample/`.
+
+---
+
+## 📚 Docs
+
+- [docs/architecture.md](docs/architecture.md) — pipeline and trust model
+- [docs/api.md](docs/api.md) — backend API reference
+- [docs/demo-script.md](docs/demo-script.md) — portfolio walkthrough
+- [docs/runbook.md](docs/runbook.md) — operator checks
+- [docs/resume-bullets.md](docs/resume-bullets.md) — ATS-friendly resume bullets
+
+---
+
+## ⚠️ Limitations & Future Work
+
+**Limitations — read before using:**
+- **Outputs require human verification.** Confidence scores and evidence-coverage metrics are heuristics, not fact-checks. Anything used for a decision must be independently verified.
+- **Sample/mock sources do not replace live research.** The default `SearchTool` and demo data are stubs; wiring real retrieval is required for non-toy use.
+- **Not production-ready.** This is a student portfolio project — no real deployment, no real users, no SLAs, no guarantees about availability, security, or correctness.
+- **Synchronous execution.** The agent runs inside the HTTP request; long queries hold the connection. A real deployment would move the pipeline behind a job queue.
+- **Hallucination risk remains.** Credibility scoring, citation tracking, contradiction detection, and unsupported-claim flagging reduce risk but do not eliminate it.
+
+**Planned / future work:**
+- Async job queue (Celery / RQ) so the agent can run beyond a single HTTP request
+- Pluggable retrieval backends (Brave / Tavily / SerpAPI) gated behind a single `SearchTool` interface
+- LLM-backed abstractive summarization as an alternative to the extractive default
+- Richer evaluation: a small labeled set + per-pipeline-stage accuracy metrics
+- Per-source freshness decay in the credibility scorer
+
+---
+
+## 🎓 Project Context
+
+Built by **Ryan Bush**, University of Maryland Information Science (General Business minor; prior Electrical Engineering coursework), as a portfolio project to practice agentic system design, NLP, and full-stack engineering. It is a student-built learning project, not a product.
+
+Suggested GitHub topics: `autonomous-agent`, `research-assistant`, `nlp`, `information-retrieval`, `summarization`, `fastapi`, `python`, `portfolio-project`.
 
 ---
 
