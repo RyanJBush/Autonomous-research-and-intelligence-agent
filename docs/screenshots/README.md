@@ -1,35 +1,17 @@
-# Screenshots — Europa
+# Europa Screenshots
 
-This folder contains screenshots for presenting **Europa — Autonomous Research and Intelligence Agent**.
+This folder stores screenshot assets used for portfolio review of Europa.
 
-## Integrity requirements
-When sharing screenshots, always disclose the retrieval mode used:
-- **Sample-data/stubbed** capture (deterministic)
-- **Live lightweight retrieval** capture (Wikipedia/DDG Instant Answer)
+## Captured screenshots currently in this directory
+- [x] `01-query-input.png` — query entry UI state
+- [x] `02-task-decomposition.png` — task decomposition / planning view
+- [x] `03-source-cards.png` — source inspection cards
+- [x] `04-final-cited-report.png` — generated cited report view
+- [x] `05-api-docs.png` — API documentation screen
+- [x] `06-execution-timeline.png` — execution timeline / trace view
 
-Never imply screenshots are proof of factual correctness. They show UI/reporting behavior only.
+## Retrieval context disclosure
+These screenshots represent local demo workflows. Depending on runtime mode, retrieval is either deterministic sample-data behavior or lightweight live web search connectors. Screenshots demonstrate product flow and UI behavior, not guaranteed factual correctness.
 
-## Current files
-- `01-query-input.png`
-- `02-task-decomposition.png`
-- `03-source-cards.png`
-- `04-final-cited-report.png`
-- `05-api-docs.png`
-- `06-execution-timeline.png`
-
-## Capture workflow (recommended)
-```bash
-# Terminal 1
-python backend/_europa_run.py
-
-# Terminal 2
-cd frontend && npm ci && npm run dev -- --port 5773
-
-# Terminal 3
-python scripts/_capture_screenshots.py
-```
-
-This capture path is deterministic and uses sample-backed behavior for reproducibility.
-
-## Caption template (use in README/portfolio)
-“Screenshots captured from Europa’s local demo workflow. Depending on runtime, retrieval may use deterministic sample data or lightweight live APIs; outputs are heuristic and require human verification.”
+## If you need new screenshots
+Use `scripts/_capture_screenshots.py` after starting the local backend/frontend workflow documented in `docs/demo-runbook.md`.
