@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Europa — Portfolio Preview</title>
+  <style>
+    :root {
+      --bg: #f5fbff;
+      --bg2: #e9f4ff;
+      --card: rgba(255,255,255,0.82);
+      --line: #a8c7e8;
+      --text: #0f2a44;
+      --muted: #40627f;
+      --accent: #5da9e9;
+      --accent2: #bfe3ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 10%, #ffffff 0%, var(--bg) 40%, var(--bg2) 100%);
+      line-height: 1.5;
+    }
+    .container { width: min(1100px, 92%); margin: 0 auto; }
+    header { padding: 64px 0 36px; }
+    .hero {
+      background: linear-gradient(140deg, rgba(255,255,255,.95), rgba(233,244,255,.85));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(46, 93, 140, .12);
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(2rem, 5vw, 3rem); }
+    .tagline { margin: 0; color: var(--muted); font-size: clamp(1rem, 2.2vw, 1.2rem); }
+    .disclaimer {
+      margin-top: 16px;
+      display: inline-block;
+      background: #e6f3ff;
+      border: 1px solid #8fc0ea;
+      color: #114066;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    section { margin: 24px 0 36px; }
+    h2 { margin: 0 0 14px; font-size: 1.4rem; }
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      align-items: center;
+    }
+    .step {
+      text-align: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 18px 12px;
+      border-radius: 14px;
+      font-weight: 600;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4c7ca8;
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .badges { display: flex; flex-wrap: wrap; gap: 10px; }
+    .badge {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: .9rem;
+      color: #1f4d74;
+    }
+    a.btn {
+      display: inline-block;
+      text-decoration: none;
+      background: linear-gradient(120deg, #5da9e9, #8ac4f2);
+      color: white;
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    footer { padding: 20px 0 35px; color: var(--muted); font-size: .95rem; }
+    @media (max-width: 820px) {
+      .cards { grid-template-columns: 1fr 1fr; }
+      .pipeline { grid-template-columns: 1fr 1fr; }
+      .step::after { display: none; }
+    }
+    @media (max-width: 500px) {
+      header { padding-top: 34px; }
+      .hero { padding: 20px; }
+      .cards, .pipeline { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="hero">
+        <h1>Europa</h1>
+        <p class="tagline">Portfolio Preview of an autonomous research and intelligence workflow</p>
+        <p class="disclaimer">Not a fact-checking service — verify results independently</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Research Pipeline</h2>
+      <div class="pipeline" aria-label="Research pipeline steps">
+        <div class="step">Search</div>
+        <div class="step">Retrieve</div>
+        <div class="step">Synthesize</div>
+        <div class="step">Output</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Key Capabilities</h2>
+      <div class="cards">
+        <article class="card"><strong>Task Planning</strong><br/>Breaks broad prompts into a staged research flow.</article>
+        <article class="card"><strong>Source-Linked Drafting</strong><br/>Generates summaries and reports tied to collected references.</article>
+        <article class="card"><strong>Trace Visibility</strong><br/>Exposes intermediate steps for reviewer inspection and debugging.</article>
+        <article class="card"><strong>Mode Flexibility</strong><br/>Supports deterministic sample-data demos and lightweight live retrieval.</article>
+        <article class="card"><strong>Backend API Design</strong><br/>Uses FastAPI endpoints for session lifecycle and reporting output.</article>
+        <article class="card"><strong>Portfolio Documentation</strong><br/>Includes architecture and runbook docs for recruiter and reviewer context.</article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Tech Stack</h2>
+      <div class="badges">
+        <span class="badge">Python</span><span class="badge">FastAPI</span><span class="badge">SQLAlchemy</span>
+        <span class="badge">PostgreSQL</span><span class="badge">React</span><span class="badge">Vite</span>
+      </div>
+      <a class="btn" href="https://github.com/RyanJBush/Autonomous-research-and-intelligence-agent" target="_blank" rel="noopener">View GitHub Repository</a>
+    </section>
+
+    <footer>
+      Built for portfolio review by <a href="https://github.com/RyanJBush" target="_blank" rel="noopener">RyanJBush</a>.
+    </footer>
+  </div>
+</body>
+</html>
