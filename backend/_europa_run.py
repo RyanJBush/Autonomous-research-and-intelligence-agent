@@ -54,9 +54,8 @@ rs_module.SearchTool = _SampleSearchTool
 rs_module.Scraper = _SampleScraper
 
 import uvicorn  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-
 from app.main import app  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 app.add_middleware(
     CORSMiddleware,
