@@ -1,59 +1,84 @@
-# Europa — Autonomous Research and Intelligence Agent
+# Europa — Student-Built Research Assistant Demo
 
-A portfolio demo of an AI-assisted research workflow that turns a query into a cited draft report.
+Europa is a portfolio project by a **University of Maryland student studying Information Science and Electrical Engineering with a Business minor**. It demonstrates an agent-style research workflow that turns a question into a source-linked draft response.
 
-## Recruiter-facing summary
-I’m a **University of Maryland student studying Information Science and Electrical Engineering with a Business minor.** Europa is one of my portfolio projects focused on practical AI orchestration, backend API design, and transparent research reporting. It is built to demonstrate engineering decisions and communication quality in a realistic but demo-scale environment.
+## What Europa is (and is not)
+- **Is:** a demo research assistant that shows planning, retrieval, synthesis, and report generation.
+- **Is not:** a fact-checking service or a guarantee of correctness.
+- **Intended use:** portfolio/interview review of system design, API engineering, and transparent AI workflow decisions.
 
-## What this project demonstrates
-- Agent-style pipeline orchestration from user query to structured output
-- Evidence-linked report generation with source tracking and validation signals
-- FastAPI backend design with session lifecycle, traces, and export paths
-- Honest AI product framing that separates demo behavior from real-world reliability
+## Retrieval mode (explicit)
+Europa supports two retrieval modes:
 
-## Tech stack
-- **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL
-- **Frontend:** React, Vite
-- **Agent services:** planner, retrieval, summarization, validation, reporting modules
-- **Demo tooling:** deterministic sample pipeline scripts and screenshot capture scripts
+1. **Static sample-data mode (default for demos)**
+   - `scripts/demo_pipeline.py` reads from `data/sample/sample_sources.json`.
+   - No live web calls.
+   - Best for repeatable walkthroughs.
 
-## Architecture overview
-See `docs/architecture.md` for component boundaries, data flow, and service responsibilities.
+2. **Live lightweight web retrieval (optional)**
+   - Backend search service can call **Wikipedia OpenSearch** and **DuckDuckGo Instant Answer**.
+   - Useful to demonstrate retrieval plumbing, but coverage/quality varies.
 
-## How to run locally
+> In short: portfolio demos are usually run in **static sample-data mode**, with **optional live API retrieval** when you want to show networked search behavior.
+
+## Pipeline overview
+Europa follows a simple pipeline:
+
+**Search → Retrieve → Synthesize → Output**
+
+Supporting capabilities include source cards, confidence heuristics, contradiction/coverage signals, and trace events for review.
+
+## Limitations (read first)
+- Outputs may be incomplete, outdated, or wrong.
+- LLM-generated synthesis can hallucinate or misinterpret sources.
+- Confidence/validation signals are heuristics, not proof.
+- Live retrieval connectors are lightweight and may miss important evidence.
+- **Human verification is required before using results for real decisions.**
+
+## Quick start
+
+### 1) Clone and install
 ```bash
 git clone https://github.com/RyanJBush/Autonomous-research-and-intelligence-agent.git
 cd Autonomous-research-and-intelligence-agent
+make backend-install
+make frontend-install
+```
+
+### 2) Configure environment and secrets
+Create `backend/.env` with at least:
+```env
+ASTRA_DATABASE_URL=postgresql+psycopg://astra:astra@localhost:5432/astra
+ASTRA_JWT_SECRET=change-me-for-local-dev
+```
+
+For a Docker-only local demo, `docker-compose.yml` already sets default local environment values.
+
+### 3) Run a local demo
+
+#### Option A (recommended): deterministic CLI demo
+```bash
 python scripts/demo_pipeline.py
 ```
 
-## Demo workflow
-1. Run `python scripts/demo_pipeline.py` for the deterministic portfolio demo flow.
-2. Optionally run backend + frontend locally for UI walkthroughs.
-3. Review generated report output and trace artifacts to inspect reasoning and citations.
+#### Option B: local web UI + API
+```bash
+docker compose up --build
+```
+- UI: `http://localhost:5173`
+- API docs: `http://localhost:8000/docs`
 
-## Screenshots / demo
-See `docs/screenshots/README.md` and the captured images in `docs/screenshots/`:
-- `01-query-input.png`
-- `02-task-decomposition.png`
-- `03-source-cards.png`
-- `04-final-cited-report.png`
-- `05-api-docs.png`
-- `06-execution-timeline.png`
+## Example research session (deterministic demo)
+1. Run `python scripts/demo_pipeline.py`.
+2. Enter a research question when prompted.
+3. Review produced source list and synthesized report draft.
+4. Manually verify important claims against trusted sources.
 
-## Retrieval/search clarity
-Retrieval is available in multiple modes:
-- **Sample dataset-based demo:** `scripts/demo_pipeline.py` uses `data/sample/sample_sources.json` with no network calls.
-- **Sample-backed local UI capture:** `backend/_europa_run.py` uses deterministic patched tools for repeatable screenshots.
-- **Live web search via lightweight APIs:** default backend search can call **Wikipedia OpenSearch** and **DuckDuckGo Instant Answer**.
-
-**Retrieval is sample dataset-based by default for portfolio demos, with optional live web search via Wikipedia OpenSearch and DuckDuckGo Instant Answer.**
-
-## Limitations and future work
-- Retrieval and synthesis results should be independently verified — this is a portfolio demo, not a fact-checking service.
-- AI-generated research summaries may contain errors or hallucinations; human verification is required for any real-world use.
-- Current live retrieval connectors are lightweight and may miss depth, recency, or source diversity compared with dedicated commercial search APIs.
-- Future work: add richer retrieval adapters, stronger citation ranking controls, and deeper evaluation harnesses.
+## Portfolio Preview and screenshots
+- Portfolio Preview page: `docs/preview/index.html`
+- Screenshot guide: `docs/screenshots/README.md`
+- Architecture: `docs/architecture.md`
+- Demo runbook: `docs/demo-runbook.md`
 
 ## Resume bullets
 See `docs/resume-bullets.md`.
