@@ -1,17 +1,26 @@
 # Europa Screenshots
 
-This folder stores screenshot assets used for portfolio review of Europa.
+This folder contains UI screenshots for **portfolio/design review** of Europa.
 
-## Captured screenshots currently in this directory
-- [x] `01-query-input.png` — query entry UI state
-- [x] `02-task-decomposition.png` — task decomposition / planning view
-- [x] `03-source-cards.png` — source inspection cards
-- [x] `04-final-cited-report.png` — generated cited report view
-- [x] `05-api-docs.png` — API documentation screen
-- [x] `06-execution-timeline.png` — execution timeline / trace view
+## Current screenshot set
+- [x] `01-query-input.png` — query input state
+- [x] `02-task-decomposition.png` — planning/decomposition view
+- [x] `03-source-cards.png` — retrieved source cards
+- [x] `04-final-cited-report.png` — synthesized draft report
+- [x] `05-api-docs.png` — backend API docs (FastAPI)
+- [x] `06-execution-timeline.png` — trace/event timeline
 
 ## Retrieval context disclosure
-These screenshots represent local demo workflows. Depending on runtime mode, retrieval is either deterministic sample-data behavior or lightweight live web search connectors. Screenshots demonstrate product flow and UI behavior, not guaranteed factual correctness.
+These images show local demo behavior. Depending on runtime mode, retrieval is either:
+- **Static sample data** (deterministic), or
+- **Live lightweight API search** (Wikipedia OpenSearch + DuckDuckGo Instant Answer).
 
-## If you need new screenshots
-Use `scripts/_capture_screenshots.py` after starting the local backend/frontend workflow documented in `docs/demo-runbook.md`.
+Screenshots are meant to show UX and pipeline flow, not guaranteed factual quality.
+
+## TODO when refreshing screenshots
+- [ ] Capture one run labeled “Static sample-data mode”
+- [ ] Capture one run labeled “Live API retrieval mode”
+- [ ] Confirm disclaimer visibility in report/output screens
+
+## How to recapture
+Use `scripts/_capture_screenshots.py` after starting the local stack described in `docs/demo-runbook.md`.
