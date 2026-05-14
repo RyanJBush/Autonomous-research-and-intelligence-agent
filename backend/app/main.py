@@ -408,8 +408,8 @@ def export_research_report(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _validate_research_owner(db, research_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
+    _validate_research_owner(db, report_id, user.id)
+    summary = db.query(Summary).filter(Summary.report_id == report_id).first()
     if summary is None or not summary.structured_report:
         raise HTTPException(status_code=404, detail="Report not found")
     report = json.loads(summary.structured_report)
