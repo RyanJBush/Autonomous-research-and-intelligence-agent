@@ -425,10 +425,18 @@ def export_research_report(
             from io import BytesIO
             research = _get_research_or_404(db, report_id, user.id)
             md = app.state.research_service.report_builder.to_markdown(report)
-            buf = BytesIO(); c = canvas.Canvas(buf, pagesize=letter); text = c.beginText(40, 760)
-            text.textLine(f"Report: {research.query}"); text.textLine(f"Timestamp: {datetime.now(timezone.utc).isoformat()}"); text.textLine("Agent Version: europa-1.0"); text.textLine("")
-            for line in md.splitlines(): text.textLine(line[:110])
-            c.drawText(text); c.showPage(); c.save()
+            buf = BytesIO()
+            c = canvas.Canvas(buf, pagesize=letter)
+            text = c.beginText(40, 760)
+            text.textLine(f"Report: {research.query}")
+            text.textLine(f"Timestamp: {datetime.now(timezone.utc).isoformat()}")
+            text.textLine("Agent Version: europa-1.0")
+            text.textLine("")
+            for line in md.splitlines():
+                text.textLine(line[:110])
+            c.drawText(text)
+            c.showPage()
+            c.save()
             return Response(content=buf.getvalue(), media_type="application/pdf")
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"PDF export failed: {exc}")
