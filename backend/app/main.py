@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -303,8 +303,8 @@ def get_research_metrics(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ResearchMetricsRead:
-    _validate_research_owner(db, report_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
+    _validate_research_owner(db, research_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
     sources = db.query(Source).filter(Source.research_id == research_id).all()
     citations = db.query(Citation).filter(Citation.research_id == research_id).all()
     trace_events = db.query(ResearchTraceEvent).filter(
@@ -347,8 +347,8 @@ def get_research_compliance(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ResearchComplianceRead:
-    _validate_research_owner(db, report_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
+    _validate_research_owner(db, research_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
     report = json.loads(summary.structured_report) if summary and summary.structured_report else {}
     compliance = report.get("compliance", {})
     return ResearchComplianceRead(
@@ -408,8 +408,8 @@ def export_research_report(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _validate_research_owner(db, report_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
+    _validate_research_owner(db, research_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
     if summary is None or not summary.structured_report:
         raise HTTPException(status_code=404, detail="Report not found")
     report = json.loads(summary.structured_report)
