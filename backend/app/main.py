@@ -417,7 +417,7 @@ def export_research_report(
         research = _get_research_or_404(db, report_id, user.id)
         metadata = {"timestamp": datetime.now(timezone.utc).isoformat(), "query": research.query, "agent_version": "europa-1.0"}
         markdown = app.state.research_service.report_builder.to_markdown(report)
-        return PlainTextResponse(f"# {research.query}\n\n> Generated: {metadata["timestamp"]}\n> Agent Version: {metadata["agent_version"]}\n\n" + markdown, media_type="text/markdown")
+        return PlainTextResponse(f"# {research.query}\n\n> Generated: {metadata['timestamp']}\n> Agent Version: {metadata['agent_version']}\n\n" + markdown, media_type="text/markdown")
     if format == "pdf":
         try:
             from reportlab.lib.pagesizes import letter
