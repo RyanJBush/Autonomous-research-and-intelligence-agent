@@ -228,6 +228,7 @@ function ResearchQueryPage() {
   const [allowDomains, setAllowDomains] = useState('')
   const [denyDomains, setDenyDomains] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.75)
   const planPreview = useMemo(
     () => decomposeQuery(query, breadth),
     [query, breadth]
@@ -253,6 +254,7 @@ function ResearchQueryPage() {
             .split(',')
             .map((item) => item.trim())
             .filter(Boolean),
+          confidence_threshold: confidenceThreshold,
         }),
       })
       navigate(`/results/${data.research_id}`)
@@ -715,8 +717,8 @@ function ResearchResultsPage() {
                       {source.title}
                     </a>
                     <p className="text-xs text-slate-500">
-                      {source.source_type} • credibility{' '}
-                      {source.credibility_score}
+                      {source.source_type} • credibility {source.credibility_score}
+                      <span className={`ml-2 rounded-full px-2 py-0.5 text-xs ${source.credibility_label === "High" ? "bg-emerald-100 text-emerald-700" : source.credibility_label === "Medium" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>{source.credibility_label}</span>
                     </p>
                   </li>
                 ))}

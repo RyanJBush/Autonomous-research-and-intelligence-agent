@@ -30,6 +30,7 @@ class ResearchCreate(BaseModel):
     breadth: int = 3
     recency_days: int | None = 30
     max_sources: int = 5
+    confidence_threshold: float = 0.75
     allow_domains: list[str] = Field(default_factory=list)
     deny_domains: list[str] = Field(default_factory=list)
 
@@ -40,6 +41,7 @@ class ResearchRefineRequest(BaseModel):
     breadth: int = 3
     recency_days: int | None = 30
     max_sources: int = 5
+    confidence_threshold: float = 0.75
     allow_domains: list[str] = Field(default_factory=list)
     deny_domains: list[str] = Field(default_factory=list)
 
@@ -63,6 +65,7 @@ class SourceRead(BaseModel):
     content: str
     source_type: str
     credibility_score: float
+    credibility_label: str = "Unknown"
     source_author: str | None = None
     published_at: datetime | None = None
     retrieved_at: datetime | None = None
@@ -101,6 +104,8 @@ class ResearchResult(BaseModel):
     summary: str
     citations: list[CitationRead]
     report: dict
+    iterations_performed: int = 1
+    final_confidence: float = 0.0
 
 
 class ResearchTraceRead(BaseModel):

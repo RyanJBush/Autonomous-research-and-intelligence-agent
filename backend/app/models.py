@@ -66,6 +66,7 @@ class Source(Base):
     content: Mapped[str] = mapped_column(Text)
     source_type: Mapped[str] = mapped_column(String(64), default="news")
     credibility_score: Mapped[float] = mapped_column(Float, default=0.0)
+    credibility_label: Mapped[str] = mapped_column(String(16), default="Unknown")
     # Optional metadata populated when available
     source_author: Mapped[str | None] = mapped_column(String(255), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
