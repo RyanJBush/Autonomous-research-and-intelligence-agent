@@ -14,6 +14,7 @@ from app.models import (
     Summary,
 )
 from app.services.citations import CitationSystem
+from app.services.credibility_scorer import CredibilityScorer
 from app.services.memory_store import MemoryStore
 from app.services.pii_redactor import PIIRedactor
 from app.services.planner import PlannerAgent
@@ -37,6 +38,7 @@ class ResearchService:
         self.citation_system = CitationSystem()
         self.memory = MemoryStore()
         self.report_builder = ReportBuilder()
+        self.credibility_scorer = CredibilityScorer()
         self.tool_registry = ToolRegistry()
         self.pii_redactor = PIIRedactor()
 
@@ -56,7 +58,8 @@ class ResearchService:
         deny_domains: list[str] | None = None,
         parent_session_id: int | None = None,
         version: int = 1,
-    ) -> tuple[ResearchSession, Summary, list[Citation]]:
+        confidence_threshold: float = 0.75,
+    ) -> tuple[ResearchSession, Summary, list[Citation], int, float]:
         research = ResearchSession(
             user_id=user_id,
             query=query,
@@ -231,6 +234,15 @@ class ResearchService:
                     deny_domains=deny_domains,
                 ),
             )[:max_sources]
+            for source in validated_sources:
+                scored = self.credibility_scorer.score(
+                    url=str(source["url"]),
+                    content=str(source["content"]),
+                    published_at=source.get("published_at"),
+                )
+                source["source_type"] = scored.source_type
+                source["credibility_score"] = scored.credibility_score
+                source["credibility_label"] = scored.credibility_label
             contradictions = self._run_agent(
                 db,
                 research.id,
@@ -264,6 +276,7 @@ class ResearchService:
                     content=redacted_content,
                     source_type=str(source_payload["source_type"]),
                     credibility_score=float(source_payload["credibility_score"]),
+                    credibility_label=str(source_payload.get("credibility_label", "Unknown")),
                     retrieved_at=source_payload.get("retrieved_at"),
                 )
                 db.add(row)
@@ -340,6 +353,21 @@ class ResearchService:
                 ),
             )
             summary_text = self.report_builder.to_summary_text(report)
+            final_confidence = float(report.get("overall_confidence_score", 0.0) or 0.0)
+            iterations_performed = 1
+            while final_confidence < confidence_threshold and iterations_performed < 3:
+                iterations_performed += 1
+                report = self.report_builder.build(
+                    query + " (refinement pass)",
+                    source_rows,
+                    citation_rows,
+                    contradictions,
+                    research_plan=structured_plan,
+                    step_outputs=step_outputs,
+                    compliance={"pii_redactions": pii_redactions_total},
+                )
+                final_confidence = float(report.get("overall_confidence_score", 0.0) or 0.0)
+
             summary = Summary(
                 research_id=research.id,
                 content=summary_text,
@@ -363,7 +391,7 @@ class ResearchService:
             db.refresh(summary)
             for citation in citation_rows:
                 db.refresh(citation)
-            return research, summary, citation_rows
+            return research, summary, citation_rows, iterations_performed, final_confidence
         except Exception as exc:
             research.status = "failed"
             error_category = self._error_category(exc)

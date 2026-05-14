@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -90,7 +90,7 @@ def create_research(
     user: User = Depends(require_role("admin", "researcher")),
 ) -> ResearchResult:
     _enforce_daily_quota(db, user.id)
-    research, summary, citations = app.state.research_service.run(
+    research, summary, citations, iterations, final_confidence = app.state.research_service.run(
         db,
         user.id,
         payload.query,
@@ -102,6 +102,7 @@ def create_research(
         max_sources=payload.max_sources,
         allow_domains=payload.allow_domains,
         deny_domains=payload.deny_domains,
+        confidence_threshold=payload.confidence_threshold,
     )
     _log_audit(db, user, "research.create", "research_session", research.id, payload.query)
     report = json.loads(summary.structured_report) if summary.structured_report else {}
@@ -110,6 +111,8 @@ def create_research(
         summary=summary.content,
         citations=citations,
         report=report,
+        iterations_performed=iterations,
+        final_confidence=final_confidence,
     )
 
 
@@ -145,7 +148,7 @@ def retry_research(
 ) -> ResearchResult:
     previous = _get_research_or_404(db, research_id, user.id)
     _enforce_daily_quota(db, user.id)
-    research, summary, citations = app.state.research_service.run(
+    research, summary, citations, iterations, final_confidence = app.state.research_service.run(
         db,
         user.id,
         previous.query,
@@ -168,6 +171,8 @@ def retry_research(
         summary=summary.content,
         citations=citations,
         report=report,
+        iterations_performed=iterations,
+        final_confidence=final_confidence,
     )
 
 
@@ -180,7 +185,7 @@ def refine_research(
 ) -> ResearchResult:
     previous = _get_research_or_404(db, research_id, user.id)
     _enforce_daily_quota(db, user.id)
-    research, summary, citations = app.state.research_service.run(
+    research, summary, citations, iterations, final_confidence = app.state.research_service.run(
         db,
         user.id,
         payload.query,
@@ -209,6 +214,8 @@ def refine_research(
         summary=summary.content,
         citations=citations,
         report=report,
+        iterations_performed=iterations,
+        final_confidence=final_confidence,
     )
 
 
@@ -296,8 +303,8 @@ def get_research_metrics(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ResearchMetricsRead:
-    _validate_research_owner(db, research_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
+    _validate_research_owner(db, report_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
     sources = db.query(Source).filter(Source.research_id == research_id).all()
     citations = db.query(Citation).filter(Citation.research_id == research_id).all()
     trace_events = db.query(ResearchTraceEvent).filter(
@@ -340,8 +347,8 @@ def get_research_compliance(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ResearchComplianceRead:
-    _validate_research_owner(db, research_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
+    _validate_research_owner(db, report_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
     report = json.loads(summary.structured_report) if summary and summary.structured_report else {}
     compliance = report.get("compliance", {})
     return ResearchComplianceRead(
@@ -394,23 +401,37 @@ def list_audit_logs(
     )
 
 
-@app.get("/api/research/{research_id}/export")
+@app.get("/reports/{report_id}/export")
 def export_research_report(
-    research_id: int,
+    report_id: int,
     format: str = "markdown",
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _validate_research_owner(db, research_id, user.id)
-    summary = db.query(Summary).filter(Summary.research_id == research_id).first()
+    _validate_research_owner(db, report_id, user.id)
+    summary = db.query(Summary).filter(Summary.research_id == report_id).first()
     if summary is None or not summary.structured_report:
         raise HTTPException(status_code=404, detail="Report not found")
     report = json.loads(summary.structured_report)
     if format == "markdown":
+        research = _get_research_or_404(db, report_id, user.id)
+        metadata = {"timestamp": datetime.now(timezone.utc).isoformat(), "query": research.query, "agent_version": "europa-1.0"}
         markdown = app.state.research_service.report_builder.to_markdown(report)
-        return PlainTextResponse(markdown, media_type="text/markdown")
-    if format == "json":
-        return JSONResponse(report)
+        return PlainTextResponse(f"# {research.query}\n\n> Generated: {metadata["timestamp"]}\n> Agent Version: {metadata["agent_version"]}\n\n" + markdown, media_type="text/markdown")
+    if format == "pdf":
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            from io import BytesIO
+            research = _get_research_or_404(db, report_id, user.id)
+            md = app.state.research_service.report_builder.to_markdown(report)
+            buf = BytesIO(); c = canvas.Canvas(buf, pagesize=letter); text = c.beginText(40, 760)
+            text.textLine(f"Report: {research.query}"); text.textLine(f"Timestamp: {datetime.now(timezone.utc).isoformat()}"); text.textLine("Agent Version: europa-1.0"); text.textLine("")
+            for line in md.splitlines(): text.textLine(line[:110])
+            c.drawText(text); c.showPage(); c.save()
+            return Response(content=buf.getvalue(), media_type="application/pdf")
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"PDF export failed: {exc}")
     raise HTTPException(status_code=400, detail="Unsupported export format")
 
 
